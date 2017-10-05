@@ -1,0 +1,36 @@
+#-----------------------------------------#
+#       Makefile for graphmanager         #
+#             2014-10-14 mine             #
+#-----------------------------------------#
+CC = g++ 
+
+FLAG = -g -Wall
+
+DFLAG = -D_DEBUG
+
+CFLAG = $(FLAG) $(DFLAG)
+
+INCFLAG = -I./GraphManagerLib/include/ -I./sparkseecpp-5.1.0/includes/sparksee -I./include/ 
+#INCFLAG = -I./GraphManagerLib/include/
+LDFLAG = -lgraphmanager -lm -lsparksee -lmysqlclient -L./GraphManagerLib/lib -L./sparkseecpp-5.1.0/lib/linux64 -L/usr/lib64/mysql/
+#LDFLAG = -L./GraphManagerLib/lib -lgraphmanager -lm 
+
+TARGET = condis
+OBJ = ./obj/main.o
+SRC = ./src/main.cpp
+
+RM = rm -f
+
+all: $(TARGET)
+
+$(TARGET): $(OBJ)
+	$(CC) $(CFLAG) -o $@ $< $(INCFLAG) $(LDFLAG)
+
+$(OBJ): $(SRC)
+	$(CC) $(CFLAG) -c -o $@ $< $(INCFLAG) $(LDFLAG)
+
+$(OBJ): GraphManagerLib/lib/libgraphmanager.a
+
+clean:
+	$(RM) $(OBJ) $(TARGET)
+

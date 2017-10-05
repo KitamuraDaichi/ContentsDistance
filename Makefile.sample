@@ -1,0 +1,39 @@
+#-----------------------------------------#
+#       Makefile for catalogserver        #
+#             2015-08-07 luso             #
+#-----------------------------------------#
+CC = g++
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S), Linux)
+	CFLAG = -g -Wall -D_DEBUG -lrt
+	INCFLAG = -I./include -I./include/catalog_server -I./sparksee -I./sparksee/sparkseecpp-5.1.0/includes/sparksee
+	LDFLAG  = -lm -lpthread -lsparksee -L./sparksee/sparkseecpp-5.1.0/lib/linux64
+endif
+ifeq ($(UNAME_S), Darwin)
+	CFLAG = -g -Wall -D_DEBUG
+	INCFLAG = -I./include -I./include/catalog_server -I./sparksee -I./sparksee/sparkseecpp-5.0-1.0/includes/sparksee
+	LDFLAG = -lm -lpthread -lsparksee -L./sparksee/sparkseecpp-5.0-1.0/lib/macos64
+endif
+
+TARGET = catalogserver
+SRCS = main.cpp common.cpp posting_thread.cpp cs_thread.cpp TcpServer.cpp TcpUdpSkt.cpp CatalogServer.cpp CatalogServerAgent.cpp ReadConfig.cpp
+OBJS = $(SRCS:%.cpp=%.o)
+
+SRC_DIR = src
+OBJ_DIR = obj
+
+RM = rm -f
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAG) -o $@ $(INCFLAG) $(LDFLAG) $(OBJS:%.o=$(OBJ_DIR)/%.o)
+
+%.o : $(SRC_DIR)/%.cpp
+	$(CC) $(CFLAG) -c $< $(INCFLAG) -o $(OBJ_DIR)/$@
+
+clean:
+	cd $(OBJ_DIR); $(RM) $(OBJS); cd ../;
+	$(RM) $(TARGET)
+
