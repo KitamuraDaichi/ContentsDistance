@@ -6,7 +6,7 @@
 #include <sstream>
 #include <mysql/mysql.h>
 #include <vector>
-//#include <TcpServer.h>
+#include <TcpServer.h>
 
 #define UPDATE_DISTANCE_FROM_CS 16
 #define UPDATE_DISTANCE_FROM_GM 17
@@ -41,12 +41,12 @@ public:
 class UpdateDistance {
   private: 
     MysqlAccess db;
-    Tcp_Server *ts;
     int server_port;
   
   public:
     ~UpdateDistance();
     UpdateDistance();
+    Tcp_Server *ts;
     int start(int port_num);
     void updateDistanceFromCs();
     void updateDistanceFromGm();

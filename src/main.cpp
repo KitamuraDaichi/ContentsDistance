@@ -1,13 +1,13 @@
 #include <condis.h>
-#include <TcpServer.h>
+//#include <TcpServer.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <graph_manager.h>
-#include <iostream>
-#include <sstream>
-#include <mysql/mysql.h>
-#include <vector>
+//#include <graph_manager.h>
+//#include <iostream>
+//#include <sstream>
+//#include <mysql/mysql.h>
+//#include <vector>
 //#include <memory>
 //#include <mysql_driver.h>
 //#include <mysql_connection.h>
@@ -21,11 +21,7 @@
 
 int main() {
   UpdateDistance *ud;
-  MysqlAccess db;
-  Tcp_Server *ts_main;
-  ts_main = new Tcp_Server();
   int server_port = 5566;
-  ts_main->init(server_port);
 
   ud = new UpdateDistance();
   ud->start(server_port);

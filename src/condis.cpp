@@ -1,14 +1,13 @@
 #include <condis.h>
-#include <TcpServer.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <graph_manager.h>
-#include <iostream>
-#include <sstream>
-#include <mysql/mysql.h>
-#include <vector>
+//#include <TcpServer.h>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <string.h>
 //#include <graph_manager.h>
+//#include <iostream>
+//#include <sstream>
+//#include <mysql/mysql.h>
+//#include <vector>
 
 MysqlAccess::MysqlAccess() {
   this->initBuf();
@@ -93,7 +92,7 @@ const char* MysqlAccess::getErrow() {
 
 UpdateDistance::~UpdateDistance() {
   delete &db;
-  delete ts;
+  //delete ts;
 }
 UpdateDistance::UpdateDistance() {
   if (db.connectDb("localhost", "root", "hige@mos", "contents_distance") < 0) {
@@ -101,14 +100,12 @@ UpdateDistance::UpdateDistance() {
   }
 }
 int UpdateDistance::start(int port_num) {
-  Tcp_Server *tss;
-  //tss = new Tcp_Server();
-  //this->server_port = port_num;
+  this->server_port = port_num;
 
-  //ts = new Tcp_Server();
-  //ts->init(server_port);
-  //ts->startTcpServer();
-  //ts->acceptLoop(cd_thread, this, sizeof(UpdateDistance *));
+  ts = new Tcp_Server();
+  ts->init(this->server_port);
+  ts->startTcpServer();
+  ts->acceptLoop(cd_thread, this, sizeof(UpdateDistance *));
 
   return 0;
 }
@@ -140,13 +137,14 @@ int UpdateDistance::distance(std::string own_id, std::string other_id) {
   return 0;
 }
 void *cd_thread(void *arg) {
+  std::cout << "in cd_thread" << std::endl;
   UpdateDistance *ud;
   ud = ((struct cd_thread_arg *)arg)->ud;
 
   std::cout << "in cd_thread" << std::endl;
   struct message_header rmsg_h;
   for (;;) {
-    if (1){//ud->ts->recvMsgAll((char *)&rmsg_h, sizeof(struct message_header)) == 0) {
+    if (ud->ts->recvMsgAll((char *)&rmsg_h, sizeof(struct message_header)) == 0) {
       break;
     } else {
       rmsg_h.convert_ntoh();
@@ -171,3 +169,4 @@ void *cs_thread(void *arg)
   std::cout << "in cs_thread" << std::endl;
   return NULL;
 }
+
