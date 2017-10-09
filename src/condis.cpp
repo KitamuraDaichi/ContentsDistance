@@ -1,4 +1,5 @@
 #include <condis.h>
+#include <UpdateDistanceAgent.h>
 //#include <TcpServer.h>
 //#include <stdio.h>
 //#include <stdlib.h>
@@ -139,25 +140,36 @@ int UpdateDistance::distance(std::string own_id, std::string other_id) {
 void *cd_thread(void *arg) {
   std::cout << "in cd_thread" << std::endl;
   UpdateDistance *ud;
+  struct client_data cdata;
   ud = ((struct cd_thread_arg *)arg)->ud;
 
   std::cout << "in cd_thread" << std::endl;
   struct message_header rmsg_h;
+
+  pthread_mutex_t *accept_sock_mutex = ((struct thread_arg *)arg)->amp;
+  pthread_cond_t *p_signal = ((struct thread_arg *)arg)->p_signal;
+  cdata = ((struct thread_arg *)arg)->cdata;
+
+	pthread_mutex_lock(accept_sock_mutex); // [******** lock ********]
+	pthread_cond_signal(p_signal); // [******* cond signal *******]
+	pthread_mutex_unlock(accept_sock_mutex); // [******** unlock ********]
+
+  UpdateDistanceAgent *uda = new UpdateDistanceAgent(cdata);
+
   for (;;) {
-    if (ud->ts->recvMsgAll((char *)&rmsg_h, sizeof(struct message_header)) == 0) {
+    if (uda->ts->recvMsgAll((char *)&rmsg_h, sizeof(struct message_header)) == 0) {
       break;
     } else {
       rmsg_h.convert_ntoh();
     }
 
     if (rmsg_h.code == UPDATE_DISTANCE_FROM_CS) {
-      ud->updateDistanceFromCs();
+      std::cout << "rmsg_h.code: " << (int)rmsg_h.code << endl;
+      uda->updateDistanceFromCs();
     } else if (rmsg_h.code == UPDATE_DISTANCE_FROM_GM) {
-      ud->updateDistanceFromGm();
+      uda->updateDistanceFromGm();
     } else {
       std::cout << "=> Code not found: " << rmsg_h.code << std::endl;
-      //std::cout << "client port: " << cdata.saddr.sin_port << std::endl;
-      //std::cout << "client addr: " << inet_ntoa(cdata.saddr.sin_addr) << std::endl;
     }
   }
 

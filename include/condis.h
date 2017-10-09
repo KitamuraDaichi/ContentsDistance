@@ -60,6 +60,7 @@ struct cd_thread_arg {
 };
 
 struct message_from_cs {
+  struct node_id source_id;
   struct node_id dest_id;
   int hop;
   double cfec_part_value;

@@ -14,7 +14,7 @@ INCFLAG = -I./GraphManagerLib/include/ -I./GraphManagerLib/include/graph_manager
 LDFLAG = -lgraphmanager -lm -lsparksee -lmysqlclient -L./GraphManagerLib/lib -L./sparkseecpp-5.1.0/lib/linux64/ -L/usr/lib64/mysql/
 
 TARGET = condis
-SRCS = main.cpp condis.cpp
+SRCS = main.cpp condis.cpp UpdateDistanceAgent.cpp
 OBJS = $(SRCS:%.cpp=%.o)
 
 SRC_DIR = src
