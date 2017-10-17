@@ -4,6 +4,7 @@
 #include <graph_manager.h>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 #include <mysql/mysql.h>
 #include <vector>
 #include <TcpServer.h>
@@ -17,7 +18,13 @@ class UpdateDistanceAgent {
     ~UpdateDistanceAgent();
     UpdateDistanceAgent(struct client_data cdata);
     Tcp_Server *ts;
-    void updateDistanceFromCs();
+    int updateDistanceFromCs();
     void updateDistanceFromGm();
     int distance(std::string own_id, std::string other_id);
+    int addDB(struct node_id own_content_id, struct node_id other_content_id, int hop, double value);
+    int existColumn(struct node_id own_id);
 };
+
+std::string id_to_string(struct node_id id);
+std::string int_to_string(int num);
+std::string double_to_string(double num);

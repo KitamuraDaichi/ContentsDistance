@@ -112,8 +112,6 @@ int UpdateDistance::start(int port_num) {
 }
 void UpdateDistance::updateDistanceFromCs() {
   std::cout << "in updateDistanceFromCs" << std::endl;
-
-
 }
 void UpdateDistance::updateDistanceFromGm() {
   std::cout << "in updateDistanceFromGm" << std::endl;
@@ -167,6 +165,7 @@ void *cd_thread(void *arg) {
       std::cout << "rmsg_h.code: " << (int)rmsg_h.code << endl;
       uda->updateDistanceFromCs();
     } else if (rmsg_h.code == UPDATE_DISTANCE_FROM_GM) {
+      std::cout << "rmsg_h.code: " << (int)rmsg_h.code << endl;
       uda->updateDistanceFromGm();
     } else {
       std::cout << "=> Code not found: " << rmsg_h.code << std::endl;

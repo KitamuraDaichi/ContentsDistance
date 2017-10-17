@@ -1005,7 +1005,7 @@ IsNoErrorState	sparkseecpp-5.1.0/includes/sparksee/script/ScriptParser.h	/^    s
 IsNull	sparkseecpp-5.1.0/includes/sparksee/gdb/Handler.h	/^    bool_t IsNull() const$/;"	f	class:Handler
 IsSessionAttribute	sparkseecpp-5.1.0/includes/sparksee/gdb/Graph_data.h	/^    bool_t IsSessionAttribute() const$/;"	f	class:Attribute
 LDFLAG	GraphManagerLib/Makefile	/^LDFLAG = -lsparksee -lpthread$/;"	m
-LDFLAG	Makefile	/^LDFLAG = -lgraphmanager -lm -lsparksee -lmysqlclient -L.\/GraphManagerLib\/lib -L.\/sparkseecpp-5.1.0\/lib\/linux64 -L\/usr\/lib64\/mysql\/$/;"	m
+LDFLAG	Makefile	/^LDFLAG = -lgraphmanager -lm -lsparksee -lmysqlclient -L.\/GraphManagerLib\/lib -L.\/sparkseecpp-5.1.0\/lib\/linux64\/ -L\/usr\/lib64\/mysql\/$/;"	m
 LIB_DIR	GraphManagerLib/Makefile	/^LIB_DIR = lib$/;"	m
 LessEqual	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	/^    LessEqual,$/;"	e	enum:Condition
 LessThan	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	/^    LessThan,$/;"	e	enum:Condition
@@ -1109,7 +1109,7 @@ SPARKSEE_EXPORT	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	99;"	d
 SPARKSEE_PERMANENT_ASSERT	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	29;"	d
 SPARKSEE_PERMANENT_ASSERT	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	32;"	d
 SRCS	GraphManagerLib/Makefile	/^SRCS = common.cpp gm_thread.cpp TcpServer.cpp GraphManager.cpp GraphManagerAgent.cpp ReadConfig.cpp$/;"	m
-SRCS	Makefile	/^SRCS = main.cpp condis.cpp$/;"	m
+SRCS	Makefile	/^SRCS = main.cpp condis.cpp UpdateDistanceAgent.cpp$/;"	m
 SRC_DIR	GraphManagerLib/Makefile	/^SRC_DIR = src$/;"	m
 SRC_DIR	Makefile	/^SRC_DIR = src$/;"	m
 ScriptParser	sparkseecpp-5.1.0/includes/sparksee/script/ScriptParser.h	/^class SPARKSEE_EXPORT ScriptParser$/;"	c
@@ -1224,6 +1224,8 @@ Unique	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	/^    Unique$/;"	e	enum:
 UnsupportedOperationError	sparkseecpp-5.1.0/includes/sparksee/gdb/Exception.h	/^class SPARKSEE_EXPORT UnsupportedOperationError$/;"	c
 UpdateDistance	include/condis.h	/^class UpdateDistance {$/;"	c
 UpdateDistance	src/condis.cpp	/^UpdateDistance::UpdateDistance() {$/;"	f	class:UpdateDistance
+UpdateDistanceAgent	include/UpdateDistanceAgent.h	/^class UpdateDistanceAgent {$/;"	c
+UpdateDistanceAgent	src/UpdateDistanceAgent.cpp	/^UpdateDistanceAgent::UpdateDistanceAgent(struct client_data cdata) {$/;"	f	class:UpdateDistanceAgent
 VERSION_INCREMENT_CODE	GraphManagerLib/include/graph_manager/common.h	67;"	d
 Value	sparkseecpp-5.1.0/includes/sparksee/gdb/Value.h	/^class SPARKSEE_EXPORT Value$/;"	c
 ValueList	sparkseecpp-5.1.0/includes/sparksee/gdb/Value.h	/^    ValueList()$/;"	f	class:ValueList
@@ -1431,6 +1433,7 @@ ad7041ec9346ef2ba5fefc5d626932ac	sparkseecpp-5.1.0/doc/html/classSparkseeConfig.
 ad9641f6d2d1544153fac85905a79f37	sparkseecpp-5.1.0/doc/html/classShortestPath.html	/^<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="ad9641f6d2d1544153fac85905a79f37"><\/a><!-- doxytag: member="ShortestPath::~ShortestPath" ref="ad9641f6d2d1544153fac85905a79f37" args="()" -->$/;"	a
 adcc29b736ae4fb1d5be6370432c4f7d	sparkseecpp-5.1.0/doc/html/classTypeList.html	/^<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="adcc29b736ae4fb1d5be6370432c4f7d"><\/a><!-- doxytag: member="TypeList::~TypeList" ref="adcc29b736ae4fb1d5be6370432c4f7d" args="()" -->$/;"	a
 add4b7cb712e1322ec3da4a4d9af6460	sparkseecpp-5.1.0/doc/html/classError.html	/^<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="add4b7cb712e1322ec3da4a4d9af6460"><\/a><!-- doxytag: member="Error::~Error" ref="add4b7cb712e1322ec3da4a4d9af6460" args="()" -->$/;"	a
+addDB	src/UpdateDistanceAgent.cpp	/^int UpdateDistanceAgent::addDB(struct node_id own_content_id, struct node_id other_content_id, int hop, double value) {$/;"	f	class:UpdateDistanceAgent
 ae140c760aec50541fed66457cc8a821	sparkseecpp-5.1.0/doc/html/classValue.html	/^<a class="anchor" name="ae140c760aec50541fed66457cc8a821"><\/a><!-- doxytag: member="Value::SetVoid" ref="ae140c760aec50541fed66457cc8a821" args="(Value &amp;value)" -->$/;"	a
 ae77ed506b66b59916b5e52cb3386c51	sparkseecpp-5.1.0/doc/html/classShortestPath.html	/^<a class="anchor" name="ae77ed506b66b59916b5e52cb3386c51"><\/a><!-- doxytag: member="ShortestPath::maxHops" ref="ae77ed506b66b59916b5e52cb3386c51" args="" -->$/;"	a
 ae77ed506b66b59916b5e52cb3386c51	sparkseecpp-5.1.0/doc/html/classSinglePairShortestPath.html	/^<a class="anchor" name="ae77ed506b66b59916b5e52cb3386c51"><\/a><!-- doxytag: member="SinglePairShortestPath::maxHops" ref="ae77ed506b66b59916b5e52cb3386c51" args="" -->$/;"	a
@@ -1751,6 +1754,7 @@ data	sparkseecpp-5.1.0/includes/sparksee/gdb/Database.h	/^    int64_t data;$/;"	
 dataType	sparkseecpp-5.1.0/includes/sparksee/gdb/Graph_data.h	/^    DataType dataType;$/;"	m	class:Attribute
 db	GraphManagerLib/include/graph_manager/GraphManager.h	/^    Database *db;$/;"	m	class:Graph_Manager
 db	GraphManagerLib/include/graph_manager/gm_thread.h	/^    Database *db;$/;"	m	struct:thread_arg
+db	include/UpdateDistanceAgent.h	/^    MysqlAccess db;$/;"	m	class:UpdateDistanceAgent
 db	include/condis.h	/^    MysqlAccess db;$/;"	m	class:UpdateDistance
 db	sparkseecpp-5.1.0/includes/sparksee/gdb/Graph.h	/^    Database * db;$/;"	m	class:Graph
 db	sparkseecpp-5.1.0/includes/sparksee/gdb/Session.h	/^    Database * db;$/;"	m	class:Session
@@ -1790,9 +1794,11 @@ dfdbbc41c65221608e57fdab2df3d1e2	sparkseecpp-5.1.0/doc/html/classWeakConnectivit
 dfe5fa44d75bc552b2f8d1ff3d7b7c29	sparkseecpp-5.1.0/doc/html/classObjects.html	/^<a class="anchor" name="dfe5fa44d75bc552b2f8d1ff3d7b7c29"><\/a><!-- doxytag: member="Objects::Copy" ref="dfe5fa44d75bc552b2f8d1ff3d7b7c29" args="()" -->$/;"	a
 distNodeFirstQueue	sparkseecpp-5.1.0/includes/sparksee/algorithms/SinglePairShortestPathDijkstra.h	/^    sparksee::gdb::double64_t distNodeFirstQueue;$/;"	m	class:SinglePairShortestPathDijkstra
 dist_attr	sparkseecpp-5.1.0/includes/sparksee/algorithms/SinglePairShortestPathDijkstra.h	/^    sparksee::gdb::attr_t dist_attr;$/;"	m	class:SinglePairShortestPathDijkstra
+distance	src/UpdateDistanceAgent.cpp	/^int UpdateDistanceAgent::distance(std::string own_id, std::string other_id) {$/;"	f	class:UpdateDistanceAgent
 distance	src/condis.cpp	/^int UpdateDistance::distance(std::string own_id, std::string other_id) {$/;"	f	class:UpdateDistance
 distinct	sparkseecpp-5.1.0/includes/sparksee/gdb/Graph_data.h	/^    int64_t distinct;$/;"	m	class:AttributeStatistics
 double64_t	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	/^typedef double double64_t;$/;"	t
+double_to_string	src/UpdateDistanceAgent.cpp	/^std::string double_to_string(double num) {$/;"	f
 dst_nid	GraphManagerLib/include/graph_manager/common.h	/^    struct node_id dst_nid;$/;"	m	struct:graph	typeref:struct:graph::node_id
 e00da582fce68a624709806e8b8b683a	sparkseecpp-5.1.0/doc/html/classGraph.html	/^<a class="anchor" name="e00da582fce68a624709806e8b8b683a"><\/a><!-- doxytag: member="Graph::FindType" ref="e00da582fce68a624709806e8b8b683a" args="(const std::wstring &amp;name)" -->$/;"	a
 e02ae01e862c70ba16ab8da24194d96b	sparkseecpp-5.1.0/doc/html/classValues.html	/^<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="e02ae01e862c70ba16ab8da24194d96b"><\/a><!-- doxytag: member="Values::~Values" ref="e02ae01e862c70ba16ab8da24194d96b" args="()" -->$/;"	a
@@ -1885,6 +1891,7 @@ excludedNodes	sparkseecpp-5.1.0/includes/sparksee/algorithms/Context.h	/^    spa
 excludedNodes	sparkseecpp-5.1.0/includes/sparksee/algorithms/ShortestPath.h	/^    sparksee::gdb::Objects *excludedNodes;$/;"	m	class:ShortestPath
 excludedNodes	sparkseecpp-5.1.0/includes/sparksee/algorithms/Traversal.h	/^    sparksee::gdb::Objects *excludedNodes;$/;"	m	class:Traversal
 exec	sparkseecpp-5.1.0/includes/sparksee/script/ScriptParser.h	/^    sparksee::gdb::bool_t exec;$/;"	m	class:ScriptParserData
+existColumn	src/UpdateDistanceAgent.cpp	/^int UpdateDistanceAgent::existColumn(struct node_id own_content_id) {$/;"	f	class:UpdateDistanceAgent
 existEdge	GraphManagerLib/src/GraphManagerAgent.cpp	/^oid_t Graph_Manager_Agent::existEdge(oid_t src_oid, oid_t dst_oid, CATALOGID gcid)$/;"	f	class:Graph_Manager_Agent
 extentPages	sparkseecpp-5.1.0/includes/sparksee/gdb/Sparksee.h	/^    int32_t extentPages;$/;"	m	class:SparkseeConfig
 extentSize	sparkseecpp-5.1.0/includes/sparksee/gdb/Sparksee.h	/^    int32_t extentSize;$/;"	m	class:SparkseeConfig
@@ -2141,6 +2148,7 @@ htobe64	GraphManagerLib/include/graph_manager/common.h	48;"	d
 idNod	sparkseecpp-5.1.0/includes/sparksee/algorithms/StrongConnectivityGabow.h	/^        sparksee::gdb::oid_t idNod;$/;"	m	class:StrongConnectivityGabow::InfoNode
 idNodPred	sparkseecpp-5.1.0/includes/sparksee/algorithms/StrongConnectivityGabow.h	/^        sparksee::gdb::oid_t idNodPred;$/;"	m	class:StrongConnectivityGabow::InfoNode
 idNodePrevious	sparkseecpp-5.1.0/includes/sparksee/algorithms/TraversalDFS.h	/^    sparksee::gdb::int64_t idNodePrevious;$/;"	m	class:TraversalDFS
+id_to_string	src/UpdateDistanceAgent.cpp	/^std::string id_to_string(struct node_id id) {$/;"	f
 ident	sparkseecpp-5.1.0/includes/sparksee/gdb/Graph_data.h	/^    attr_t ident;$/;"	m	class:Attribute
 ident	sparkseecpp-5.1.0/includes/sparksee/gdb/Graph_data.h	/^    type_t ident;$/;"	m	class:Type
 inclusive	sparkseecpp-5.1.0/includes/sparksee/algorithms/Context.h	/^    sparksee::gdb::bool_t inclusive;$/;"	m	class:Context
@@ -2207,6 +2215,7 @@ init	GraphManagerLib/src/TcpServer.cpp	/^int Tcp_Server::init(int s_port)$/;"	f	
 initBuf	src/condis.cpp	/^int MysqlAccess::initBuf() {$/;"	f	class:MysqlAccess
 int32_t	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	/^typedef signed int int32_t;$/;"	t
 int64_t	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	/^typedef signed long long int64_t;$/;"	t
+int_to_string	src/UpdateDistanceAgent.cpp	/^std::string int_to_string(int num) {$/;"	f
 isDirected	sparkseecpp-5.1.0/includes/sparksee/gdb/Graph_data.h	/^    bool_t isDirected;$/;"	m	class:Type
 isNeededToBePop	sparkseecpp-5.1.0/includes/sparksee/algorithms/StrongConnectivityGabow.h	/^        sparksee::gdb::bool_t isNeededToBePop;$/;"	m	class:StrongConnectivityGabow::InfoNode
 isNodeType	sparkseecpp-5.1.0/includes/sparksee/io/TypeExporter.h	/^    sparksee::gdb::bool_t isNodeType;$/;"	m	class:TypeExporter
@@ -2396,6 +2405,7 @@ sendQuery	src/condis.cpp	/^int MysqlAccess::sendQuery(char *sql) {$/;"	f	class:M
 separator	sparkseecpp-5.1.0/includes/sparksee/io/CSVReader.h	/^    sparksee::gdb::uchar_t separator;$/;"	m	class:CSVReader
 separator	sparkseecpp-5.1.0/includes/sparksee/io/CSVWriter.h	/^    sparksee::gdb::uchar_t separator;$/;"	m	class:CSVWriter
 server_port	GraphManagerLib/include/graph_manager/TcpServer.h	/^    int server_port;$/;"	m	class:Tcp_Server
+server_port	include/UpdateDistanceAgent.h	/^    int server_port;$/;"	m	class:UpdateDistanceAgent
 server_port	include/condis.h	/^    int server_port;$/;"	m	class:UpdateDistance
 server_skt	GraphManagerLib/include/graph_manager/TcpServer.h	/^    struct sockaddr_in server_skt;$/;"	m	class:Tcp_Server	typeref:struct:Tcp_Server::sockaddr_in
 server_soc	GraphManagerLib/include/graph_manager/TcpServer.h	/^    int server_soc;$/;"	m	class:Tcp_Server
@@ -2422,6 +2432,7 @@ size	sparkseecpp-5.1.0/includes/sparksee/gdb/Graph_data.h	/^    int64_t size;$/;
 skipLines	sparkseecpp-5.1.0/includes/sparksee/io/CSVReader.h	/^    sparksee::gdb::int32_t skipLines;$/;"	m	class:CSVReader
 sock	GraphManagerLib/include/graph_manager/TcpServer.h	/^    int sock;$/;"	m	struct:client_data
 source	sparkseecpp-5.1.0/includes/sparksee/algorithms/SinglePairShortestPath.h	/^    sparksee::gdb::oid_t source;$/;"	m	class:SinglePairShortestPath
+source_id	include/condis.h	/^  struct node_id source_id;$/;"	m	struct:message_from_cs	typeref:struct:message_from_cs::node_id
 sparksee	GraphManagerLib/include/graph_manager/GraphManager.h	/^    Sparksee *sparksee;$/;"	m	class:Graph_Manager
 sparksee	sparkseecpp-5.1.0/includes/sparksee/algorithms/ConnectedComponents.h	/^namespace sparksee$/;"	n
 sparksee	sparkseecpp-5.1.0/includes/sparksee/algorithms/Context.h	/^namespace sparksee$/;"	n
@@ -2493,6 +2504,7 @@ total	sparkseecpp-5.1.0/includes/sparksee/io/TypeExporter.h	/^    sparksee::gdb:
 totalMem	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	/^    int64_t totalMem;$/;"	m	class:PlatformStatistics
 ts	GraphManagerLib/include/graph_manager/GraphManager.h	/^    Tcp_Server *ts;$/;"	m	class:Graph_Manager
 ts	GraphManagerLib/include/graph_manager/GraphManagerAgent.h	/^    Tcp_Server *ts;$/;"	m	class:Graph_Manager_Agent
+ts	include/UpdateDistanceAgent.h	/^    Tcp_Server *ts;$/;"	m	class:UpdateDistanceAgent
 ts	include/condis.h	/^    Tcp_Server *ts;$/;"	m	class:UpdateDistance
 tsFormat	sparkseecpp-5.1.0/includes/sparksee/io/TypeLoader.h	/^    std::string *tsFormat;$/;"	m	class:TypeLoader
 type	sparkseecpp-5.1.0/includes/sparksee/gdb/Graph_data.h	/^    type_t type;$/;"	m	class:Attribute
@@ -2504,7 +2516,9 @@ type_t	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	/^typedef int32_t type_t
 types	sparkseecpp-5.1.0/includes/sparksee/gdb/Export.h	/^    std::map<type_t,Type *> types;$/;"	m	class:DefaultExport
 uchar_t	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	/^typedef wchar_t uchar_t;$/;"	t
 ud	include/condis.h	/^  UpdateDistance *ud;$/;"	m	struct:cd_thread_arg
+updateDistanceFromCs	src/UpdateDistanceAgent.cpp	/^int UpdateDistanceAgent::updateDistanceFromCs() {$/;"	f	class:UpdateDistanceAgent
 updateDistanceFromCs	src/condis.cpp	/^void UpdateDistance::updateDistanceFromCs() {$/;"	f	class:UpdateDistance
+updateDistanceFromGm	src/UpdateDistanceAgent.cpp	/^void UpdateDistanceAgent::updateDistanceFromGm() {$/;"	f	class:UpdateDistanceAgent
 updateDistanceFromGm	src/condis.cpp	/^void UpdateDistance::updateDistanceFromGm() {$/;"	f	class:UpdateDistance
 userTime	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	/^    int64_t userTime;$/;"	m	class:PlatformStatistics
 user_local	GraphManagerLib/include/graph_manager/common.h	/^    uint64_t user_local;$/;"	m	struct:edge_attribute
@@ -2541,6 +2555,7 @@ writeGraphToDB	GraphManagerLib/src/GraphManagerAgent.cpp	/^int Graph_Manager_Age
 ~TypeLoaderEvent	sparkseecpp-5.1.0/includes/sparksee/io/TypeLoader.h	/^    virtual ~TypeLoaderEvent()$/;"	f	class:TypeLoaderEvent
 ~TypeLoaderListener	sparkseecpp-5.1.0/includes/sparksee/io/TypeLoader.h	/^    virtual ~TypeLoaderListener()$/;"	f	class:TypeLoaderListener
 ~UpdateDistance	src/condis.cpp	/^UpdateDistance::~UpdateDistance() {$/;"	f	class:UpdateDistance
+~UpdateDistanceAgent	src/UpdateDistanceAgent.cpp	/^UpdateDistanceAgent::~UpdateDistanceAgent() {$/;"	f	class:UpdateDistanceAgent
 ~ValueList	sparkseecpp-5.1.0/includes/sparksee/gdb/Value.h	/^    ~ValueList()$/;"	f	class:ValueList
 ~ValueListIterator	sparkseecpp-5.1.0/includes/sparksee/gdb/Value.h	/^    ~ValueListIterator()$/;"	f	class:ValueListIterator
 ~catalog	GraphManagerLib/include/graph_manager/common.h	/^	~catalog() {$/;"	f	struct:catalog
