@@ -6,6 +6,7 @@ UpdateDistanceAgent::~UpdateDistanceAgent() {
   //delete ts;
 }
 UpdateDistanceAgent::UpdateDistanceAgent(struct client_data cdata) {
+  rc = new ReadConfig("catalog_distance.conf");
   if (db.connectDb("localhost", "root", "hige@mos", "contents_distance") < 0) {
     fprintf(stderr, "Databaseにconnectできませんでした。\n");
   }
@@ -45,8 +46,17 @@ int UpdateDistanceAgent::updateDistanceFromCs() {
       return -1;
     } else {
       std::cout << "データベースを更新しました。" << std::endl;
-      return 1;
     }
+
+    if ((tmp = this->propagateUpdate(mess.dest_id)) < 0) {
+    }
+    
+    /*
+    if ((tmp = this->calculateDistances(mess.source_id)) < 0) {
+
+    }
+    */
+
   }
  return 1; 
 }
@@ -72,6 +82,67 @@ int UpdateDistanceAgent::addDB(struct node_id own_content_id, struct node_id oth
   char **result = this->db.getResult();
   if (result != NULL) {
     std::cout << result[0] << std::endl;
+  }
+
+  return 0;
+}
+
+int UpdateDistanceAgent::propagateUpdate(struct node_id own_content_id){
+  std::string query;
+  std::string ownci = id_to_string(own_content_id);
+  int i;
+
+  query = "select * from distances where own_content_id = \"" + ownci + "\" and hop = 1 ;";
+  int tmp;
+  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+    return -1;
+  }
+
+  char **result = this->db.getResult();
+  if (result == NULL) {
+    return -1;
+  } else {
+    std::cout << result[1] << std::endl;
+  }
+  int result_size = this->db.getRowNum();
+
+  std::map<std::string, int> list_propageted;
+  for(i = 0; i < result_size; i++) {
+    list_propageted.insert(std::make_pair(result[1], 1));
+    result = this->db.getResult();
+  }
+  std::map<std::string, int> id_ip;
+  in_port_t gm_port;
+  rc->getParam("CONTENT_DISTANCE_PORT", &gm_port);
+  std::string ip;
+  rc->getParam("0000000c", &ip);
+  std::cout << "port: " << gm_port << std::endl;
+  std::cout << "ip: " << ip << std::endl;
+
+  return 0;
+}
+
+int UpdateDistanceAgent::calculateDistances(struct node_id other_content_id){
+  std::string query;
+  std::string othci = id_to_string(other_content_id);
+  int i;
+
+  query = "select * from own_contents where other_content_id = \"" + othci + "and hop = 1\" ;";
+  if (this->db.sendQuery((char *)query.c_str()) != 1) {
+    return -1;
+  }
+
+  char **result = this->db.getResult();
+  if (result != NULL) {
+    return -1;
+  } else {
+    std::cout << result[0] << std::endl;
+  }
+  int result_size = sizeof(result) / sizeof(result[0]);
+
+  //struct hash<std::string> hash_result;
+  for(i = 0; i < result_size; i++) {
+     
   }
 
   return 0;

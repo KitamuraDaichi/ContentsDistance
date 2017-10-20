@@ -8,11 +8,14 @@
 #include <mysql/mysql.h>
 #include <vector>
 #include <TcpServer.h>
+#include <functional>
+#include <map>
 
 class UpdateDistanceAgent {
   private: 
     MysqlAccess db;
     int server_port;
+    ReadConfig *rc;
 
   public:
     ~UpdateDistanceAgent();
@@ -23,6 +26,8 @@ class UpdateDistanceAgent {
     int distance(std::string own_id, std::string other_id);
     int addDB(struct node_id own_content_id, struct node_id other_content_id, int hop, double value);
     int existColumn(struct node_id own_id);
+    int propagateUpdate(struct node_id own_content_id);
+    int calculateDistances(struct node_id other_content_id);
 };
 
 std::string id_to_string(struct node_id id);
