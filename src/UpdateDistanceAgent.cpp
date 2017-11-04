@@ -91,6 +91,8 @@ int UpdateDistanceAgent::propagateUpdate(struct node_id own_content_id){
   std::string query;
   std::string ownci = id_to_string(own_content_id);
   int i;
+  //std::map<std::string, int> *map_itr;
+  std::map<std::string, int>::iterator map_itr;
 
   query = "select * from distances where own_content_id = \"" + ownci + "\" and hop = 1 ;";
   int tmp;
@@ -106,18 +108,29 @@ int UpdateDistanceAgent::propagateUpdate(struct node_id own_content_id){
   }
   int result_size = this->db.getRowNum();
 
-  std::map<std::string, int> list_propageted;
+  std::map<std::string, int> list_propagated;
   for(i = 0; i < result_size; i++) {
-    list_propageted.insert(std::make_pair(result[1], 1));
+    list_propagated.insert(std::make_pair(result[1], 1));
     result = this->db.getResult();
   }
-  std::map<std::string, int> id_ip;
-  in_port_t gm_port;
-  rc->getParam("CONTENT_DISTANCE_PORT", &gm_port);
-  std::string ip;
-  rc->getParam("0000000c", &ip);
-  std::cout << "port: " << gm_port << std::endl;
-  std::cout << "ip: " << ip << std::endl;
+  for(map_itr = list_propagated.begin(); map_itr != list_propagated.end(); map_itr++) {
+    in_port_t gm_port;
+    rc->getParam("CONTENT_DISTANCE_PORT", &gm_port);
+    std::string ip;
+    std::string id_first = (map_itr->first).substr(0, 8);// キーへのアクセス
+    rc->getParam(id_first, &ip);
+    std::cout << "id_first: " << id_first;
+    std::cout << "port: " << gm_port << std::endl;
+    std::cout << "ip: " << ip << std::endl;
+
+	  pthread_t thread_id;
+    struct propagate_thread_arg thread_arg;
+    char *pta = new char[sizeof(struct propagate_thread_arg)];
+
+    pthread_create(&thread_id, NULL, propagate_thread, pta);
+
+
+  }
 
   return 0;
 }
@@ -203,4 +216,32 @@ std::string double_to_string(double num) {
   s << num;
   
   return s.str();
+}
+
+void *propagate_thread(void *arg) {
+  TcpClient *tc;
+  std::string str_buf;
+  struct message_header smsg_h;
+  struct message_second smsg_s;
+  int agent_num = ((struct propagate_thread_arg *)arg)->agent_num;
+  int thread_num = ((struct propagate_thread_arg *)arg)->thread_num;
+
+  //memcpy(thread_arg, additional_arg, arg_size);
+  setupMsgHeader(&smsg_h, UPDATE_DISTANCE_SECOND, 0, 0);
+  smsg_h.convert_hton();
+
+  /*
+  memcpy(*smsg_s, *(arg->message_second), size(struct message_second));
+  smsg_c.source_id = node_id(0x0000000c, 0x0000000c, 0x0000000c, 0x0000000c);
+  smsg_c.dest_id = node_id(0x0000000a, 0x0000000a, 0x0000000a, 0x0000000a);
+  smsg_c.hop = 1;
+  smsg_c.cfec_part_value = 100;
+
+  str_buf.append((char *)&smsg_h, sizeof(struct message_header));
+  str_buf.append((char *)&smsg_c, sizeof(struct message_from_cs));
+
+  tc = new TcpClient();
+
+  tc->SendMsg((char *)str_buf.c_str(), str_buf.size());
+  */
 }

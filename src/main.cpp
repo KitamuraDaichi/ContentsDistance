@@ -15,11 +15,18 @@
 //#include <cppconn/Statement.h>
 //#include <cppconn/ResultSet.h>
 
-
-
+void start_point_start() {
+  UpdateDistance *ud;
+  ud = new UpdateDistance();
+  ud->setupUpdate();
+}
 
 
 int main() {
+  start_point_start();
+  return 0;
+
+  //ここから前のやつ
   UpdateDistance *ud;
   int server_port = 5566;
 
@@ -31,6 +38,7 @@ int main() {
   if (ud->distance(own_id, other_id) < 0) {
     std::cerr << "このコンテンツはこのサーバの管理下ではありません。" << std::endl;
   }
+  //ここまで前のやつ
   /*
   ts = new Tcp_Server();
   ts->init(server_port);

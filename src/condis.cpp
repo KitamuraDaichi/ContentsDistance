@@ -96,10 +96,87 @@ UpdateDistance::~UpdateDistance() {
   //delete ts;
 }
 UpdateDistance::UpdateDistance() {
-  if (db.connectDb("localhost", "root", "hige@mos", "contents_distance") < 0) {
+  rc = new ReadConfig("catalog_distance.conf");
+  if (db.connectDb("localhost", "root", "hige@mos", "cfec_database") < 0) {
     fprintf(stderr, "Databaseにconnectできませんでした。\n");
   }
 }
+int UpdateDistance::setupUpdate() {
+  std::cout << "in setupUpdate" << std::endl;
+  std::string query;
+  query = "select * from neighbor_nodes";
+  int tmp;
+  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+    std::cerr << "sendQuery返り値: " << tmp << std::endl;
+    return -1;
+  }
+
+  // mysqlから隣接ノードテーブルを読み出し
+  MYSQL_ROW row;
+  int count = mysql_num_rows(this->db.result);
+  if ((this->nncp = (struct neighbor_node_column *)malloc(count * sizeof(struct neighbor_node_column))) == NULL) {
+    std::cout << "error" << std::endl;
+    exit(1);
+  }
+  std::cout << "count: " << count << std::endl;
+  std::cout << "std_size: " << (sizeof(this->nncp) / sizeof(nncp[0])) << std::endl;
+  std::cout << "struct neighbor_node size: " << sizeof(struct neighbor_node_column) << std::endl;
+  
+  int i = 0;
+  while ((row = mysql_fetch_row(this->db.result))) {
+    struct neighbor_node_column nnc;
+    strcpy(nnc.own_content_id, row[0]);
+    strcpy(nnc.other_content_id, row[1]);
+    strcpy(nnc.version_id, row[2]);
+    memcpy(&(this->nncp[i]), &nnc, sizeof(neighbor_node_column));
+    i++;
+  }
+  int j;
+  for (j = 0; j < count; j++) {
+    std::cout << "own_id: " << this->nncp[j].own_content_id << std::endl;
+    std::cout << "other_id: " << this->nncp[j].other_content_id << std::endl;
+    std::cout << "version_id: " << this->nncp[j].version_id << std::endl;
+
+    struct message_header smsg_h;
+    struct message_to_neighbor_nodes smsg_n;
+    std::string str_buf;
+
+    smsg_n.start_content_id = this->nncp[j].own_content_id;
+    smsg_n.version_id = this->nncp[j].version_id;
+    smsg_n.hop = 1;
+    ostringstream os;
+    os << INITIAL_VALUE;
+    smsg_n.value_chain = os.str();
+    smsg_n.node_chain = "";
+    std::string id_first = nncp[j].own_content_id;
+    id_first = id_first.substr(0, 8);
+
+    setupMsgHeader(&smsg_h, UPDATE_DISTANCE_FROM_CS, 0, 0);
+    smsg_h.convert_hton();
+    str_buf.append((char *)&smsg_h, sizeof(struct message_header));
+    str_buf.append((char *)&smsg_n, sizeof(struct message_to_neighbor_nodes));
+    this->tc = new TcpClient();
+
+    in_port_t gm_port;
+    std::string ip;
+    os.str("");
+    os.clear(stringstream::goodbit);
+    rc->getParam("CONTENT_DISTANCE_PORT", &gm_port);
+    os << gm_port;
+    std::string str_gm_port = os.str();
+    rc->getParam(id_first, &ip);
+    this->tc->InitClientSocket(ip.c_str(), str_gm_port.c_str());
+    this->tc->SendMsg((char *)str_buf.c_str(), str_buf.size());
+  }
+
+  // パケットの作成
+  //struct message_to_neighbor_nodes mess; 
+  //mess.start_node_id = row[0];
+  //mess.version = 
+
+  return 0;
+}
+
 int UpdateDistance::start(int port_num) {
   this->server_port = port_num;
 
@@ -164,7 +241,7 @@ void *cd_thread(void *arg) {
     if (rmsg_h.code == UPDATE_DISTANCE_FROM_CS) {
       std::cout << "rmsg_h.code: " << (int)rmsg_h.code << endl;
       uda->updateDistanceFromCs();
-    } else if (rmsg_h.code == UPDATE_DISTANCE_FROM_GM) {
+    } else if (rmsg_h.code == UPDATE_DISTANCE_SECOND) {
       std::cout << "rmsg_h.code: " << (int)rmsg_h.code << endl;
       uda->updateDistanceFromGm();
     } else {

@@ -7,9 +7,11 @@
 #include <mysql/mysql.h>
 #include <vector>
 #include <TcpServer.h>
+#include <TcpClient.h>
 
 #define UPDATE_DISTANCE_FROM_CS 16
-#define UPDATE_DISTANCE_FROM_GM 17
+#define UPDATE_DISTANCE_SECOND 17
+#define INITIAL_VALUE 1000.0
 
 void *cd_thread(void *arg);
 
@@ -21,11 +23,11 @@ public:
 };
 class MysqlAccess : public I_DbAccess {
 	MYSQL	*conn;
-	MYSQL	mysql;
-	MYSQL_RES	*result;
 	MYSQL_ROW	record;
 	my_bool	reconnect;
 public:
+	MYSQL	mysql;
+	MYSQL_RES	*result;
 	MysqlAccess();
 	~MysqlAccess();
 
@@ -41,12 +43,19 @@ public:
 class UpdateDistance {
   private: 
     MysqlAccess db;
+    char *neighbor_node_list;
     int server_port;
   
   public:
     ~UpdateDistance();
     UpdateDistance();
+
+    int setupUpdate();
     Tcp_Server *ts;
+    TcpClient *tc;
+    ReadConfig *rc;
+    //std::vector<struct neighbor_node_column> vec_neighbor_node_column;
+    struct neighbor_node_column *nncp;
     int start(int port_num);
     void updateDistanceFromCs();
     void updateDistanceFromGm();
@@ -59,6 +68,19 @@ struct cd_thread_arg {
   UpdateDistance *ud;
 };
 
+struct neighbor_node_column {
+  char own_content_id[33];
+  char other_content_id[33];
+  char version_id[25];
+};
+struct message_to_neighbor_nodes {
+  std::string start_content_id;
+  std::string version_id;
+  int hop;
+  std::string value_chain;
+  std::string node_chain;
+};
+
 struct message_from_cs {
   struct node_id source_id;
   struct node_id dest_id;
@@ -66,3 +88,9 @@ struct message_from_cs {
   double cfec_part_value;
 }; 
 
+struct message_second {
+  struct node_id source_id;
+  struct node_id dest_id;
+  int hop;
+  double cfec_part_value;
+}; 

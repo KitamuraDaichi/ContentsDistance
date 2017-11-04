@@ -8,6 +8,7 @@
 #include <mysql/mysql.h>
 #include <vector>
 #include <TcpServer.h>
+#include <TcpClient.h>
 #include <functional>
 #include <map>
 
@@ -33,3 +34,9 @@ class UpdateDistanceAgent {
 std::string id_to_string(struct node_id id);
 std::string int_to_string(int num);
 std::string double_to_string(double num);
+void *propagate_thread(void *arg);
+struct propagate_thread_arg {
+  struct message_second ms;
+  int agent_num;
+  int thread_num;
+};

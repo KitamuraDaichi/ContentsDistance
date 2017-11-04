@@ -1219,7 +1219,7 @@ TypeLoaderEvent	sparkseecpp-5.1.0/includes/sparksee/io/TypeLoader.h	/^class SPAR
 TypeLoaderListener	sparkseecpp-5.1.0/includes/sparksee/io/TypeLoader.h	/^    TypeLoaderListener()$/;"	f	class:TypeLoaderListener
 TypeLoaderListener	sparkseecpp-5.1.0/includes/sparksee/io/TypeLoader.h	/^class SPARKSEE_EXPORT TypeLoaderListener $/;"	c
 UPDATE_DISTANCE_FROM_CS	include/condis.h	11;"	d
-UPDATE_DISTANCE_FROM_GM	include/condis.h	12;"	d
+UPDATE_DISTANCE_SECOND	include/condis.h	12;"	d
 Unique	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	/^    Unique$/;"	e	enum:AttributeKind
 UnsupportedOperationError	sparkseecpp-5.1.0/includes/sparksee/gdb/Exception.h	/^class SPARKSEE_EXPORT UnsupportedOperationError$/;"	c
 UpdateDistance	include/condis.h	/^class UpdateDistance {$/;"	c
@@ -1451,6 +1451,7 @@ afb6f690c1fb42cf4f729229d3e81518	sparkseecpp-5.1.0/doc/html/classStrongConnectiv
 afb6f690c1fb42cf4f729229d3e81518	sparkseecpp-5.1.0/doc/html/classStrongConnectivityGabow.html	/^<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="afb6f690c1fb42cf4f729229d3e81518"><\/a><!-- doxytag: member="StrongConnectivityGabow::ccs" ref="afb6f690c1fb42cf4f729229d3e81518" args="" -->$/;"	a
 afb6f690c1fb42cf4f729229d3e81518	sparkseecpp-5.1.0/doc/html/classWeakConnectivity.html	/^<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="afb6f690c1fb42cf4f729229d3e81518"><\/a><!-- doxytag: member="WeakConnectivity::ccs" ref="afb6f690c1fb42cf4f729229d3e81518" args="" -->$/;"	a
 afb6f690c1fb42cf4f729229d3e81518	sparkseecpp-5.1.0/doc/html/classWeakConnectivityDFS.html	/^<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="afb6f690c1fb42cf4f729229d3e81518"><\/a><!-- doxytag: member="WeakConnectivityDFS::ccs" ref="afb6f690c1fb42cf4f729229d3e81518" args="" -->$/;"	a
+agent_num	include/UpdateDistanceAgent.h	/^  int agent_num;$/;"	m	struct:propagate_thread_arg
 alias	sparkseecpp-5.1.0/includes/sparksee/gdb/Database.h	/^    std::wstring alias;$/;"	m	class:Database
 allowMultiline	sparkseecpp-5.1.0/includes/sparksee/io/CSVReader.h	/^    sparksee::gdb::bool_t allowMultiline;$/;"	m	class:CSVReader
 amp	GraphManagerLib/include/graph_manager/gm_thread.h	/^	pthread_mutex_t *amp;$/;"	m	struct:thread_arg
@@ -1636,6 +1637,7 @@ cacheMaxSize	sparkseecpp-5.1.0/includes/sparksee/gdb/Sparksee.h	/^    int32_t ca
 cacheStats	sparkseecpp-5.1.0/includes/sparksee/gdb/Sparksee.h	/^    bool_t cacheStats;$/;"	m	class:SparkseeConfig
 cacheStatsFile	sparkseecpp-5.1.0/includes/sparksee/gdb/Sparksee.h	/^    std::wstring cacheStatsFile;$/;"	m	class:SparkseeConfig
 cacheStatsSnapshotTime	sparkseecpp-5.1.0/includes/sparksee/gdb/Sparksee.h	/^    int64_t cacheStatsSnapshotTime;    $/;"	m	class:SparkseeConfig
+calculateDistances	src/UpdateDistanceAgent.cpp	/^int UpdateDistanceAgent::calculateDistances(struct node_id other_content_id){$/;"	f	class:UpdateDistanceAgent
 catalog	GraphManagerLib/include/graph_manager/common.h	/^	catalog() {$/;"	f	struct:catalog
 catalog	GraphManagerLib/include/graph_manager/common.h	/^struct catalog {$/;"	s
 cb36969ffa1786002d5a22cb32fe21da	sparkseecpp-5.1.0/doc/html/classEdgeTypeExporter.html	/^<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="cb36969ffa1786002d5a22cb32fe21da"><\/a><!-- doxytag: member="EdgeTypeExporter::EdgeTypeExporter" ref="cb36969ffa1786002d5a22cb32fe21da" args="()" -->$/;"	a
@@ -1665,6 +1667,7 @@ cf9b2d17ae02cedbe6649aee6f94217f	sparkseecpp-5.1.0/doc/html/classTypeLoaderEvent
 cfe1bdca7fc5bf9e0adb404e6b96a047	sparkseecpp-5.1.0/doc/html/classShortestPath.html	/^<a class="anchor" name="cfe1bdca7fc5bf9e0adb404e6b96a047"><\/a><!-- doxytag: member="ShortestPath::Run" ref="cfe1bdca7fc5bf9e0adb404e6b96a047" args="()=0" -->$/;"	a
 cfe1bdca7fc5bf9e0adb404e6b96a047	sparkseecpp-5.1.0/doc/html/classSinglePairShortestPath.html	/^<a class="anchor" name="cfe1bdca7fc5bf9e0adb404e6b96a047"><\/a><!-- doxytag: member="SinglePairShortestPath::Run" ref="cfe1bdca7fc5bf9e0adb404e6b96a047" args="()=0" -->$/;"	a
 cfec_part_value	include/condis.h	/^  double cfec_part_value;$/;"	m	struct:message_from_cs
+cfec_part_value	include/condis.h	/^  double cfec_part_value;$/;"	m	struct:message_second
 char_t	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	/^typedef char char_t;$/;"	t
 child	sparkseecpp-5.1.0/includes/sparksee/algorithms/SinglePairShortestPathDijkstra.h	/^            Node * child;$/;"	m	struct:SinglePairShortestPathDijkstra::FibonacciHeap::Node
 clearDatabase	GraphManagerLib/src/GraphManagerAgent.cpp	/^int Graph_Manager_Agent::clearDatabase()$/;"	f	class:Graph_Manager_Agent
@@ -1782,6 +1785,7 @@ degree	sparkseecpp-5.1.0/includes/sparksee/algorithms/SinglePairShortestPathDijk
 deleteGraphFromDB	GraphManagerLib/src/GraphManagerAgent.cpp	/^int Graph_Manager_Agent::deleteGraphFromDB(struct catalog *del_catalog)$/;"	f	class:Graph_Manager_Agent
 depth	sparkseecpp-5.1.0/includes/sparksee/algorithms/TraversalDFS.h	/^        sparksee::gdb::int32_t depth;$/;"	m	class:TraversalDFS::NeighborsInfo
 dest_id	include/condis.h	/^  struct node_id dest_id;$/;"	m	struct:message_from_cs	typeref:struct:message_from_cs::node_id
+dest_id	include/condis.h	/^  struct node_id dest_id;$/;"	m	struct:message_second	typeref:struct:message_second::node_id
 destination	sparkseecpp-5.1.0/includes/sparksee/algorithms/SinglePairShortestPath.h	/^    sparksee::gdb::oid_t destination;$/;"	m	class:SinglePairShortestPath
 df1eb7f9c23b7f00acb507945eaa5eb5	sparkseecpp-5.1.0/doc/html/classSparkseeConfig.html	/^<a class="anchor" name="df1eb7f9c23b7f00acb507945eaa5eb5"><\/a><!-- doxytag: member="SparkseeConfig::GetHighAvailabilityMasterHistory" ref="df1eb7f9c23b7f00acb507945eaa5eb5" args="() const " -->$/;"	a
 dfb5ab287351cc85e8873be032595660	sparkseecpp-5.1.0/doc/html/classEdgeExport.html	/^<a class="anchor" name="dfb5ab287351cc85e8873be032595660"><\/a><!-- doxytag: member="EdgeExport::GetLabelColorRGB" ref="dfb5ab287351cc85e8873be032595660" args="() const " -->$/;"	a
@@ -2144,6 +2148,7 @@ headPos	sparkseecpp-5.1.0/includes/sparksee/io/TypeExporter.h	/^    sparksee::gd
 headPos	sparkseecpp-5.1.0/includes/sparksee/io/TypeLoader.h	/^    sparksee::gdb::int32_t headPos;$/;"	m	class:TypeLoader
 height	sparkseecpp-5.1.0/includes/sparksee/gdb/Export.h	/^    int32_t height;$/;"	m	class:NodeExport
 hop	include/condis.h	/^  int hop;$/;"	m	struct:message_from_cs
+hop	include/condis.h	/^  int hop;$/;"	m	struct:message_second
 htobe64	GraphManagerLib/include/graph_manager/common.h	48;"	d
 idNod	sparkseecpp-5.1.0/includes/sparksee/algorithms/StrongConnectivityGabow.h	/^        sparksee::gdb::oid_t idNod;$/;"	m	class:StrongConnectivityGabow::InfoNode
 idNodPred	sparkseecpp-5.1.0/includes/sparksee/algorithms/StrongConnectivityGabow.h	/^        sparksee::gdb::oid_t idNodPred;$/;"	m	class:StrongConnectivityGabow::InfoNode
@@ -2306,6 +2311,7 @@ median	sparkseecpp-5.1.0/includes/sparksee/gdb/Graph_data.h	/^    double64_t med
 message	sparkseecpp-5.1.0/includes/sparksee/gdb/Exception.h	/^    std::string message;$/;"	m	class:Exception
 message_from_cs	include/condis.h	/^struct message_from_cs {$/;"	s
 message_header	GraphManagerLib/include/graph_manager/common.h	/^struct message_header {$/;"	s
+message_second	include/condis.h	/^struct message_second {$/;"	s
 minLengthStr	sparkseecpp-5.1.0/includes/sparksee/gdb/Graph_data.h	/^    int32_t minLengthStr;$/;"	m	class:AttributeStatistics
 minNode	sparkseecpp-5.1.0/includes/sparksee/algorithms/SinglePairShortestPathDijkstra.h	/^        Node * minNode;$/;"	m	class:SinglePairShortestPathDijkstra::FibonacciHeap
 minV	sparkseecpp-5.1.0/includes/sparksee/gdb/Graph_data.h	/^    Value minV;$/;"	m	class:AttributeStatistics
@@ -2373,11 +2379,15 @@ printDebug	GraphManagerLib/src/common.cpp	/^void printDebug(const char *sentense
 printFuncName	GraphManagerLib/src/common.cpp	/^void printFuncName(const char *func_name)$/;"	f
 printHeader	sparkseecpp-5.1.0/includes/sparksee/io/TypeExporter.h	/^    sparksee::gdb::bool_t printHeader;$/;"	m	class:TypeExporter
 printNodeId	GraphManagerLib/src/GraphManagerAgent.cpp	/^void Graph_Manager_Agent::printNodeId(struct node_id nid)$/;"	f	class:Graph_Manager_Agent
+propagateUpdate	src/UpdateDistanceAgent.cpp	/^int UpdateDistanceAgent::propagateUpdate(struct node_id own_content_id){$/;"	f	class:UpdateDistanceAgent
+propagate_thread	src/UpdateDistanceAgent.cpp	/^void *propagate_thread(void *arg) {$/;"	f
+propagate_thread_arg	include/UpdateDistanceAgent.h	/^struct propagate_thread_arg {$/;"	s
 props	sparkseecpp-5.1.0/includes/sparksee/gdb/Sparksee.h	/^    static sparksee_core::Properties * props;$/;"	m	class:SparkseeProperties
 queue	sparkseecpp-5.1.0/includes/sparksee/algorithms/SinglePairShortestPathDijkstra.h	/^    FibonacciHeap queue;$/;"	m	class:SinglePairShortestPathDijkstra
 quote	sparkseecpp-5.1.0/includes/sparksee/io/CSVReader.h	/^    sparksee::gdb::uchar_t quote;    $/;"	m	class:CSVReader
 quote	sparkseecpp-5.1.0/includes/sparksee/io/CSVWriter.h	/^    sparksee::gdb::uchar_t quote;    $/;"	m	class:CSVWriter
 rc	GraphManagerLib/include/graph_manager/GraphManager.h	/^    ReadConfig *rc;$/;"	m	class:Graph_Manager
+rc	include/UpdateDistanceAgent.h	/^    ReadConfig *rc;$/;"	m	class:UpdateDistanceAgent
 read	sparkseecpp-5.1.0/includes/sparksee/gdb/Database.h	/^    int64_t read;$/;"	m	class:DatabaseStatistics
 readGraphFromDB	GraphManagerLib/src/GraphManagerAgent.cpp	/^struct catalog **Graph_Manager_Agent::readGraphFromDB($/;"	f	class:Graph_Manager_Agent
 realTime	sparkseecpp-5.1.0/includes/sparksee/gdb/common.h	/^    int64_t realTime;$/;"	m	class:PlatformStatistics
@@ -2433,6 +2443,7 @@ skipLines	sparkseecpp-5.1.0/includes/sparksee/io/CSVReader.h	/^    sparksee::gdb
 sock	GraphManagerLib/include/graph_manager/TcpServer.h	/^    int sock;$/;"	m	struct:client_data
 source	sparkseecpp-5.1.0/includes/sparksee/algorithms/SinglePairShortestPath.h	/^    sparksee::gdb::oid_t source;$/;"	m	class:SinglePairShortestPath
 source_id	include/condis.h	/^  struct node_id source_id;$/;"	m	struct:message_from_cs	typeref:struct:message_from_cs::node_id
+source_id	include/condis.h	/^  struct node_id source_id;$/;"	m	struct:message_second	typeref:struct:message_second::node_id
 sparksee	GraphManagerLib/include/graph_manager/GraphManager.h	/^    Sparksee *sparksee;$/;"	m	class:Graph_Manager
 sparksee	sparkseecpp-5.1.0/includes/sparksee/algorithms/ConnectedComponents.h	/^namespace sparksee$/;"	n
 sparksee	sparkseecpp-5.1.0/includes/sparksee/algorithms/Context.h	/^namespace sparksee$/;"	n
@@ -2495,6 +2506,7 @@ tfm	sparkseecpp-5.1.0/includes/sparksee/gdb/Sparksee.h	/^    int32_t tl, tg, tfm
 tg	sparkseecpp-5.1.0/includes/sparksee/gdb/Sparksee.h	/^    int32_t tl, tg, tfm, tm, tbf;$/;"	m	class:SparkseeConfig
 third	GraphManagerLib/include/graph_manager/common.h	/^    uint32_t third;$/;"	m	struct:node_id
 thread_arg	GraphManagerLib/include/graph_manager/gm_thread.h	/^struct thread_arg {$/;"	s
+thread_num	include/UpdateDistanceAgent.h	/^  int thread_num;$/;"	m	struct:propagate_thread_arg
 timestampFormat	sparkseecpp-5.1.0/includes/sparksee/script/ScriptParser.h	/^    std::wstring timestampFormat;$/;"	m	class:ScriptParserData
 tl	sparkseecpp-5.1.0/includes/sparksee/gdb/Sparksee.h	/^    int32_t tl, tg, tfm, tm, tbf;$/;"	m	class:SparkseeConfig
 tm	sparkseecpp-5.1.0/includes/sparksee/gdb/Sparksee.h	/^    int32_t tl, tg, tfm, tm, tbf;$/;"	m	class:SparkseeConfig
