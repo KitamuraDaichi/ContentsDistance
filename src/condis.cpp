@@ -93,6 +93,7 @@ const char* MysqlAccess::getErrow() {
 
 UpdateDistance::~UpdateDistance() {
   delete &db;
+  free(this->nncp);
   //delete ts;
 }
 UpdateDistance::UpdateDistance() {
@@ -137,25 +138,52 @@ int UpdateDistance::setupUpdate() {
     std::cout << "other_id: " << this->nncp[j].other_content_id << std::endl;
     std::cout << "version_id: " << this->nncp[j].version_id << std::endl;
 
-    struct message_header smsg_h;
-    struct message_to_neighbor_nodes smsg_n;
-    std::string str_buf;
+ /*
+  *   * data format and where pointers are pointing
+  *   *
+  *   * s/r_buf
+  *   * ------------------------------------------------------------------------------
+  *   * | mes type | mes header | neighbor_node_column | hop | value_chain | node_chain|
+  *   * -------------------------------------------------------------------------------
+  *   * A          A            A                      A     A             A___ s_n_c
+  *   * |          |            |                      |     \___ s/r_v_c
+  *   * |          |            |                      \___ s/r_hop
+  *   * |          |            \___ s_n_column
+  *   * |          \___ s_n_header
+  *   * |
+  *   * \___ s/r_header
+  *   */
 
-    smsg_n.start_content_id = this->nncp[j].own_content_id;
-    smsg_n.next_content_id = this->nncp[j].other_content_id;
-    smsg_n.version_id = this->nncp[j].version_id;
-    smsg_n.hop = 1;
+    int hop = 1;
     ostringstream os;
     os << INITIAL_VALUE;
-    smsg_n.value_chain = os.str();
-    smsg_n.node_chain = "";
-    std::string id_first = nncp[j].own_content_id;
-    id_first = id_first.substr(0, 8);
+    double c_value = INITIAL_VALUE;
 
-    setupMsgHeader(&smsg_h, UPDATE_DISTANCE_FROM_CS, 0, 0);
-    smsg_h.convert_hton();
-    str_buf.append((char *)&smsg_h, sizeof(struct message_header));
-    str_buf.append((char *)&smsg_n, sizeof(struct message_to_neighbor_nodes));
+    char s_buf[sizeof(message_header) 
+      + sizeof(neighbor_node_column) + sizeof(int) + (sizeof(double) * hop)];
+
+    struct message_header *s_header = (struct message_header *)s_buf;
+    struct neighbor_node_column *s_n_column = (struct neighbor_node_column *)(s_header + sizeof(struct message_header));
+    int *s_hop = (int *)(s_n_column + sizeof(struct neighbor_node_column));
+    double *s_v_c = (double *)(s_hop + sizeof(int));
+    s_v_c = (double *)malloc(sizeof(double) * hop);
+    //char s_n_c[hop][33];
+    //s_n_c = (char *)(s_v_c + sizeof(double) * hop)
+    std::cout << "debug 1" << std::endl;
+
+    setupMsgHeader(s_header, UPDATE_DISTANCE, 0, 0);
+    memcpy(s_n_column, &(this->nncp[j]), sizeof(struct neighbor_node_column));
+    *s_hop = hop;
+    std::cout << "debug 2" << std::endl;
+    for (int k = 0; k < hop; k++) {
+      s_v_c[k] = INITIAL_VALUE;
+    }
+    std::cout << "debug 3" << std::endl;
+
+    std::string id_first = nncp[j].other_content_id;
+    id_first = id_first.substr(0, 8);
+    std::cout << "debug 4: " << id_first << std::endl;
+
     this->tc = new TcpClient();
 
     in_port_t gm_port;
@@ -166,8 +194,13 @@ int UpdateDistance::setupUpdate() {
     os << gm_port;
     std::string str_gm_port = os.str();
     rc->getParam(id_first, &ip);
+    std::cout << "ip: " << ip << std::endl;
+    std::cout << "s_buf: " << s_buf << std::endl;
     this->tc->InitClientSocket(ip.c_str(), str_gm_port.c_str());
-    this->tc->SendMsg((char *)str_buf.c_str(), str_buf.size());
+    this->tc->SendMsg((char *)s_buf, sizeof(s_buf));
+    free(s_v_c);
+    return 0;
+    //this->tc->SendMsg((char *)str_buf.c_str(), str_buf.size());
   }
 
   // パケットの作成
@@ -239,7 +272,7 @@ void *cd_thread(void *arg) {
       rmsg_h.convert_ntoh();
     }
 
-    if (rmsg_h.code == UPDATE_DISTANCE_FROM_CS) {
+    if (rmsg_h.code == UPDATE_DISTANCE) {
       std::cout << "rmsg_h.code: " << (int)rmsg_h.code << endl;
       uda->updateDistanceFromCs();
     } else if (rmsg_h.code == UPDATE_DISTANCE_SECOND) {

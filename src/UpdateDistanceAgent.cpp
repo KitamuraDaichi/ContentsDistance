@@ -18,6 +18,17 @@ int UpdateDistanceAgent::updateDistanceFromCs() {
   struct message_to_neighbor_nodes mess;
 
   this->ts->recvMsgAll((char *)&mess, sizeof(struct message_to_neighbor_nodes));
+
+  std::cout << "start_content_id: " << mess.start_content_id << std::endl;
+  std::cout << "next_content_id: " << mess.next_content_id << std::endl;
+  std::cout << "version_id: " << mess.version_id << std::endl;
+  std::cout << "hop: " << mess.hop << std::endl;
+  std::cout << "value_chain: " << mess.value_chain << std::endl;
+  std::cout << "node_chain: " << mess.node_chain << std::endl;
+
+  std::cout << "ここまで！" << std::endl;
+  return 1;
+
   if (this->existColumn(mess.next_content_id) < 0){
     std::cerr << "このコンテンツを所有していません。" << std::endl;
     return -1;
@@ -53,8 +64,10 @@ int UpdateDistanceAgent::addDB(struct message_to_neighbor_nodes mess) {
   time_stamp = buff;
 
   std::string query;
+  /*
   query = "insert into c_values(own_content_id, other_content_id, version_id, value_chain, path_chain, recv_time_stamp) values(\""
     + mess.next_content_id + "\", \"" + mess.start_content_id + "\", \"" + mess.version_id + "\", \"" + mess.value_chain + "\", \"" + mess.node_chain + "\", \"" + time_stamp + "\");";
+
   std::cout << query << std::endl;
 
   int tmp;
@@ -67,6 +80,7 @@ int UpdateDistanceAgent::addDB(struct message_to_neighbor_nodes mess) {
   if (result != NULL) {
     std::cout << result[0] << std::endl;
   }
+  */
 
   return 0;
 }

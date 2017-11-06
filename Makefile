@@ -5,7 +5,7 @@
 CC = g++ 
 
 #FLAG = -g -Wall -std=gnu++11
-FLAG = -g -Wall
+FLAG = -ggdb -Wall
 
 DFLAG = -D_DEBUG
 

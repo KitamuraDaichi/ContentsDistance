@@ -74,13 +74,18 @@ struct neighbor_node_column {
   char other_content_id[33];
   char version_id[25];
 };
+struct message_to_neighbor_nodes_header {
+  int value_chain_size;
+  int node_chain_size;
+};
+
 struct message_to_neighbor_nodes {
-  std::string start_content_id;
-  std::string next_content_id;
-  std::string version_id;
+  char start_content_id[33];
+  char next_content_id[33];
+  char version_id[25];
   int hop;
-  std::string value_chain;
-  std::string node_chain;
+  char *value_chain;
+  char *node_chain;
 };
 
 struct message_from_cs {
