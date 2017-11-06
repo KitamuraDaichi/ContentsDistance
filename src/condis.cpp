@@ -142,6 +142,7 @@ int UpdateDistance::setupUpdate() {
     std::string str_buf;
 
     smsg_n.start_content_id = this->nncp[j].own_content_id;
+    smsg_n.next_content_id = this->nncp[j].other_content_id;
     smsg_n.version_id = this->nncp[j].version_id;
     smsg_n.hop = 1;
     ostringstream os;

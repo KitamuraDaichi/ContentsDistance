@@ -15,48 +15,26 @@ UpdateDistanceAgent::UpdateDistanceAgent(struct client_data cdata) {
 }
 int UpdateDistanceAgent::updateDistanceFromCs() {
   std::cout << "in updateDistanceFromCs" << std::endl;
-  struct message_from_cs mess;
-  struct node_id other_id = mess.source_id;
-  struct node_id own_id = mess.dest_id;
+  struct message_to_neighbor_nodes mess;
 
-  this->ts->recvMsgAll((char *)&mess, sizeof(struct message_from_cs));
-  std::cout << "mess.value: " << (double)mess.cfec_part_value << std::endl;
-  std::cout << "mess.own_id: " << id_to_string(mess.source_id) << std::endl;
-  std::cout << "mess.own_id: " << mess.source_id.first << std::endl;
-  std::cout << "mess.own_id: " << own_id.first << std::endl;
-  std::cout << "mess.other_id: " << id_to_string(mess.dest_id) << std::endl;
-  std::cout << "mess.other_id: " << mess.dest_id.first << std::endl;
-  std::cout << "mess.other_id: " << other_id.first << std::endl;
-
-  if (this->existColumn(mess.dest_id) < 0){
+  this->ts->recvMsgAll((char *)&mess, sizeof(struct message_to_neighbor_nodes));
+  if (this->existColumn(mess.next_content_id) < 0){
     std::cerr << "このコンテンツを所有していません。" << std::endl;
-    std::cerr << "contents id: " << id_to_string(mess.dest_id) << std::endl;
     return -1;
   } else {
     std::cout << "このコンテンツを所有していました。" << std::endl;
-    std::cerr << "contents id: " << id_to_string(mess.dest_id) << std::endl;
     int tmp;
-    if ((tmp = this->addDB(mess.dest_id, mess.source_id, mess.hop, mess.cfec_part_value)) < 0) {
+    if ((tmp = this->addDB(mess)) < 0) {
       std::cerr << "返り値: " << tmp << std::endl;
       std::cerr << "データベースに更新できませんでした。" << std::endl;
-      std::cerr << "own id: " << id_to_string(mess.dest_id) << std::endl;
-      std::cerr << "other id: " << id_to_string(mess.source_id) << std::endl;
-      std::cerr << "hop: " << int_to_string(mess.hop) << std::endl;
-      std::cerr << "value: " << double_to_string(mess.cfec_part_value) << std::endl;
       return -1;
     } else {
       std::cout << "データベースを更新しました。" << std::endl;
     }
-
+    /*
     if ((tmp = this->propagateUpdate(mess.dest_id)) < 0) {
     }
-    
-    /*
-    if ((tmp = this->calculateDistances(mess.source_id)) < 0) {
-
-    }
     */
-
   }
  return 1; 
 }
@@ -64,13 +42,19 @@ void UpdateDistanceAgent::updateDistanceFromGm() {
   std::cout << "in updateDistanceFromGm" << std::endl;
 }
 
-int UpdateDistanceAgent::addDB(struct node_id own_content_id, struct node_id other_content_id, int hop, double value) {
-  std::string query;
-  std::string ownci = id_to_string(own_content_id);
-  std::string othci = id_to_string(other_content_id);
+int UpdateDistanceAgent::addDB(struct message_to_neighbor_nodes mess) {
+  char buff[] = "";
+  std::string time_stamp;
 
-  query = "insert into distances(own_content_id, other_content_id, hop, distance) values(\""
-    + ownci + "\", \"" + othci + "\", " + int_to_string(hop) + ", " + double_to_string(value) + ");";
+  time_t now = time(NULL);
+  struct tm *pnow = localtime(&now);
+  sprintf(buff, "%04d%02d%02d%02d%02d", pnow->tm_year + 1900, pnow->tm_mon + 1, pnow->tm_mday,
+      pnow->tm_hour, pnow->tm_min);
+  time_stamp = buff;
+
+  std::string query;
+  query = "insert into c_values(own_content_id, other_content_id, version_id, value_chain, path_chain, recv_time_stamp) values(\""
+    + mess.next_content_id + "\", \"" + mess.start_content_id + "\", \"" + mess.version_id + "\", \"" + mess.value_chain + "\", \"" + mess.node_chain + "\", \"" + time_stamp + "\");";
   std::cout << query << std::endl;
 
   int tmp;
@@ -161,11 +145,10 @@ int UpdateDistanceAgent::calculateDistances(struct node_id other_content_id){
   return 0;
 }
 
-int UpdateDistanceAgent::existColumn(struct node_id own_content_id) {
+int UpdateDistanceAgent::existColumn(std::string own_content_id) {
   std::string query;
-  std::string ownci = id_to_string(own_content_id);
 
-  query = "select * from own_contents where own_content_id = \"" + ownci + "\" ;";
+  query = "select * from neighbor_nodes where own_content_id = \"" + own_content_id + "\" ;";
 
   if (this->db.sendQuery((char *)query.c_str()) != 1) {
     return -1;

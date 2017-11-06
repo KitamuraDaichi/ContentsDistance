@@ -25,7 +25,7 @@ def make_tables()
     STDERR.puts "#{$neighbor_node_table_name}を作れませんでした。"
   end
 
-  command = "mysql -p -uroot -e 'create table #{$database_name}.#{$c_value_table_name} (own_content_id varchar(33), other_content_id varchar(33), version_id varchar(25), value_chain varchar(257), path_chain varchar(199), recv_time_stamp timestamp)'"
+  command = "mysql -p -uroot -e 'create table #{$database_name}.#{$c_value_table_name} (own_content_id varchar(33), other_content_id varchar(33), version_id varchar(25), value_chain varchar(257), path_chain varchar(199), recv_time_stamp varchar(13))'"
   if !system(command) then
     STDERR.puts "#{$c_value_table_name}を作れませんでした。"
   end

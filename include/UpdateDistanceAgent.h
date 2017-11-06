@@ -11,6 +11,7 @@
 #include <TcpClient.h>
 #include <functional>
 #include <map>
+#include <time.h>
 
 class UpdateDistanceAgent {
   private: 
@@ -25,8 +26,8 @@ class UpdateDistanceAgent {
     int updateDistanceFromCs();
     void updateDistanceFromGm();
     int distance(std::string own_id, std::string other_id);
-    int addDB(struct node_id own_content_id, struct node_id other_content_id, int hop, double value);
-    int existColumn(struct node_id own_id);
+    int addDB(struct message_to_neighbor_nodes mess);
+    int existColumn(std::string own_content_id);
     int propagateUpdate(struct node_id own_content_id);
     int calculateDistances(struct node_id other_content_id);
 };

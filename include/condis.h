@@ -11,6 +11,7 @@
 
 #define UPDATE_DISTANCE_FROM_CS 16
 #define UPDATE_DISTANCE_SECOND 17
+#define UPDATE_DISTANCE 18
 #define INITIAL_VALUE 1000.0
 
 void *cd_thread(void *arg);
@@ -75,6 +76,7 @@ struct neighbor_node_column {
 };
 struct message_to_neighbor_nodes {
   std::string start_content_id;
+  std::string next_content_id;
   std::string version_id;
   int hop;
   std::string value_chain;
