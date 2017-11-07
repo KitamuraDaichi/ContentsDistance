@@ -70,9 +70,9 @@ struct cd_thread_arg {
 };
 
 struct neighbor_node_column {
-  char own_content_id[33];
-  char other_content_id[33];
-  char version_id[25];
+  char own_content_id[34];
+  char other_content_id[34];
+  char version_id[26];
 };
 struct message_to_neighbor_nodes_header {
   int value_chain_size;

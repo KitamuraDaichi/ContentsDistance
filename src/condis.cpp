@@ -98,7 +98,7 @@ UpdateDistance::~UpdateDistance() {
 }
 UpdateDistance::UpdateDistance() {
   rc = new ReadConfig("catalog_distance.conf");
-  if (db.connectDb("localhost", "root", "hige@mos", "cfec_database") < 0) {
+  if (db.connectDb("localhost", "root", "", "cfec_database") < 0) {
     fprintf(stderr, "Databaseにconnectできませんでした。\n");
   }
 }
@@ -143,36 +143,35 @@ int UpdateDistance::setupUpdate() {
   *   *
   *   * s/r_buf
   *   * ------------------------------------------------------------------------------
-  *   * | mes type | mes header | neighbor_node_column | hop | value_chain | node_chain|
-  *   * -------------------------------------------------------------------------------
-  *   * A          A            A                      A     A             A___ s_n_c
-  *   * |          |            |                      |     \___ s/r_v_c
-  *   * |          |            |                      \___ s/r_hop
-  *   * |          |            \___ s_n_column
-  *   * |          \___ s_n_header
+  *   * | mes header | neighbor_node_column | hop | value_chain | node_chain|
+  *   * ------------------------------------------------------------------------------
+  *   * A            A                      A     A             A___ s_n_c
+  *   * |            |                      |     \___ s/r_v_c
+  *   * |            |                      \___ s/r_hop
+  *   * |            \___ s_n_column
+  *   * |          
   *   * |
   *   * \___ s/r_header
   *   */
 
     int hop = 1;
-    ostringstream os;
-    os << INITIAL_VALUE;
     double c_value = INITIAL_VALUE;
 
-    char s_buf[sizeof(message_header) 
+    char s_buf[sizeof(int) 
       + sizeof(neighbor_node_column) + sizeof(int) + (sizeof(double) * hop)];
 
     struct message_header *s_header = (struct message_header *)s_buf;
-    struct neighbor_node_column *s_n_column = (struct neighbor_node_column *)(s_header + sizeof(struct message_header));
-    int *s_hop = (int *)(s_n_column + sizeof(struct neighbor_node_column));
-    double *s_v_c = (double *)(s_hop + sizeof(int));
-    s_v_c = (double *)malloc(sizeof(double) * hop);
-    //char s_n_c[hop][33];
-    //s_n_c = (char *)(s_v_c + sizeof(double) * hop)
+    struct neighbor_node_column *s_n_column = (struct neighbor_node_column *)((char *)s_header + sizeof(int));
+    int *s_hop = (int *)((char *)s_n_column + sizeof(struct neighbor_node_column));
+    double *s_v_c = (double *)((char *)s_hop + sizeof(int));
     std::cout << "debug 1" << std::endl;
 
     setupMsgHeader(s_header, UPDATE_DISTANCE, 0, 0);
+	
     memcpy(s_n_column, &(this->nncp[j]), sizeof(struct neighbor_node_column));
+
+	std::cout << "neighbor size: " << sizeof(struct neighbor_node_column) << std::endl;
+
     *s_hop = hop;
     std::cout << "debug 2" << std::endl;
     for (int k = 0; k < hop; k++) {
@@ -182,31 +181,30 @@ int UpdateDistance::setupUpdate() {
 
     std::string id_first = nncp[j].other_content_id;
     id_first = id_first.substr(0, 8);
-    std::cout << "debug 4: " << id_first << std::endl;
 
     this->tc = new TcpClient();
 
     in_port_t gm_port;
     std::string ip;
-    os.str("");
-    os.clear(stringstream::goodbit);
     rc->getParam("CONTENT_DISTANCE_PORT", &gm_port);
+    std::cout << "debug 4: " << gm_port << std::endl;
+    ostringstream os;
     os << gm_port;
     std::string str_gm_port = os.str();
     rc->getParam(id_first, &ip);
     std::cout << "ip: " << ip << std::endl;
     std::cout << "s_buf: " << s_buf << std::endl;
-    this->tc->InitClientSocket(ip.c_str(), str_gm_port.c_str());
-    this->tc->SendMsg((char *)s_buf, sizeof(s_buf));
-    free(s_v_c);
-    return 0;
-    //this->tc->SendMsg((char *)str_buf.c_str(), str_buf.size());
-  }
 
-  // パケットの作成
-  //struct message_to_neighbor_nodes mess; 
-  //mess.start_node_id = row[0];
-  //mess.version = 
+    std::cout << "s_n_column.own: " << s_n_column->own_content_id << std::endl;
+    std::cout << "s_n_column.oth: " << s_n_column->other_content_id << std::endl;
+    std::cout << "s_n_column.ver: " << s_n_column->version_id << std::endl;
+	
+    if (this->tc->InitClientSocket(ip.c_str(), str_gm_port.c_str()) == -1) {
+		std::cout << "send error" << std::endl;
+	}
+    this->tc->SendMsg((char *)s_buf, sizeof(s_buf));
+    return 0;
+  }
 
   return 0;
 }

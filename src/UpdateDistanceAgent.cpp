@@ -15,8 +15,21 @@ UpdateDistanceAgent::UpdateDistanceAgent(struct client_data cdata) {
 }
 int UpdateDistanceAgent::updateDistanceFromCs() {
   std::cout << "in updateDistanceFromCs" << std::endl;
+  struct neighbor_node_column n_n_c;
+  //n_n_c = (struct neighbor_node_column *)malloc(sizeof(struct neighbor_node_column));
   struct message_to_neighbor_nodes mess;
+  this->ts->recvMsgAll((char *)&n_n_c, sizeof(struct neighbor_node_column));
+  std::cout << "own_content_id: " << n_n_c.own_content_id << std::endl;
+  std::cout << "other_content_id: " << n_n_c.other_content_id << std::endl;
+  std::cout << "version_id: " << n_n_c.version_id << std::endl;
 
+  int hop;
+  this->ts->recvMsgAll((char *)&hop, sizeof(int));
+  std::cout << "hop: " << hop << std::endl;
+  double value_chain[hop];
+  this->ts->recvMsgAll((char *)value_chain, sizeof(double) * hop);
+  std::cout << "value_chain: " << value_chain[0] << std::endl;
+  return 0;
   this->ts->recvMsgAll((char *)&mess, sizeof(struct message_to_neighbor_nodes));
 
   std::cout << "start_content_id: " << mess.start_content_id << std::endl;
