@@ -132,7 +132,93 @@ int UpdateDistance::setupUpdate() {
     memcpy(&(this->nncp[i]), &nnc, sizeof(neighbor_node_column));
     i++;
   }
+
+  // サーバ圧縮
   int j;
+  for (j = 0; j < count; j++) {
+    std::string ip;
+    std::string id_first = nncp[j].other_content_id;
+    id_first = id_first.substr(0, 8);
+    rc->getParam(id_first, &ip);
+
+    if (this->dest_compless_map.count(ip) == 0) {
+    }
+    this->dest_compless_map[ip].push_back(nncp[j]);
+  }
+  // end サーバ圧縮
+ /*
+  *   * data format and where pointers are pointing
+  *   *
+  *   * s/r_buf
+  *   * ------------------------------------------------------------------------------
+  *   * |header|column num|hop|neighbor_node_column|value_chain|node_chain|
+  *   * ------------------------------------------------------------------------------
+  *   * A      A          A   A                    A           A
+  *   * |      |          |   |                    |           |___ s_n_c
+  *   * |      |          |   |                    |___ s_v_c
+  *   * |      |          |   \___ s/r_n_n_c
+  *   * |      |          \___ s/r_hop
+  *   * |      \___ column_num_p
+  *   * |          
+  *   * |
+  *   * \___ s/r_header
+  *   */
+  in_port_t gm_port;
+  rc->getParam("CONTENT_DISTANCE_PORT", &gm_port);
+  ostringstream os;
+  os << gm_port;
+  std::string str_gm_port = os.str();
+  int hop = 1;
+  // 圧縮されたテーブルを送信する
+  std::map<std::string, vector<struct neighbor_node_column> >::iterator it;
+  std::map<std::string, vector<struct neighbor_node_column> >::iterator itEnd 
+    = dest_compless_map.end();
+  for (it = dest_compless_map.begin(); it != itEnd; ++it) {
+    std::cout << "ip: " << it->first << std::endl;
+    std::vector<struct neighbor_node_column>::iterator v_itr;
+    std::vector<struct neighbor_node_column>::iterator v_itrEnd = (it->second).end();
+
+    int column_num = (it->second).size();
+    char s_buf[sizeof(struct message_header) + sizeof(int) + sizeof(int)
+      + (sizeof(neighbor_node_column) + (sizeof(double) * hop))
+      * column_num];
+    struct message_header *s_header = (struct message_header *)s_buf;
+    setupMsgHeader(s_header, UPDATE_DISTANCE, 0, 0);
+    int *column_num_p = (int *)((char *)s_buf + sizeof(struct message_header));
+    *column_num_p = column_num;
+    int *hop_p = (int *)((char *)column_num_p + sizeof(int));
+    *hop_p = hop;
+    char *column_start_p = (char *)((char *)hop_p + sizeof(int));
+
+    for (v_itr = (it->second).begin(); v_itr != v_itrEnd; ++v_itr) {
+      std::cout << "other_id: " << (*v_itr).other_content_id << std::endl;
+      memcpy((struct neighbor_node_column *)column_start_p, &(*v_itr), sizeof(struct neighbor_node_column));
+      double *s_v_c = (double *)((char *)column_start_p + sizeof(struct neighbor_node_column));
+      for (int k = 0; k < hop; k++) {
+        s_v_c[k] = INITIAL_VALUE;
+      }
+      column_start_p = (char *)((char *)s_v_c + sizeof(double) * hop);
+    }
+    std::cout << "debug 1" << std::endl;
+    std::string ip = it->first;
+    std::cout << "debug 2" << std::endl;
+
+    if (ip != "10.58.58.2") {
+      std::cout << "debug 4" << std::endl;
+      TcpClient *tc2;
+      tc2 = new TcpClient();
+      if (tc2->InitClientSocket(ip.c_str(), str_gm_port.c_str()) == -1) {
+        std::cout << "send error" << std::endl;
+      }
+      std::cout << "debug 3" << std::endl;
+      tc2->SendMsg((char *)s_buf, sizeof(s_buf));
+      std::cout << "debug 5" << std::endl;
+      return 0;
+    }
+  }
+  // end 圧縮されたテーブルを送信する
+
+  // 行単位で送信する例
   for (j = 0; j < count; j++) {
     std::cout << "own_id: " << this->nncp[j].own_content_id << std::endl;
     std::cout << "other_id: " << this->nncp[j].other_content_id << std::endl;
@@ -154,7 +240,6 @@ int UpdateDistance::setupUpdate() {
   *   * \___ s/r_header
   *   */
 
-    int hop = 1;
     double c_value = INITIAL_VALUE;
 
     char s_buf[sizeof(int) 
@@ -170,7 +255,7 @@ int UpdateDistance::setupUpdate() {
 	
     memcpy(s_n_column, &(this->nncp[j]), sizeof(struct neighbor_node_column));
 
-	std::cout << "neighbor size: " << sizeof(struct neighbor_node_column) << std::endl;
+    std::cout << "neighbor size: " << sizeof(struct neighbor_node_column) << std::endl;
 
     *s_hop = hop;
     std::cout << "debug 2" << std::endl;
@@ -200,11 +285,12 @@ int UpdateDistance::setupUpdate() {
     std::cout << "s_n_column.ver: " << s_n_column->version_id << std::endl;
 	
     if (this->tc->InitClientSocket(ip.c_str(), str_gm_port.c_str()) == -1) {
-		std::cout << "send error" << std::endl;
-	}
+      std::cout << "send error" << std::endl;
+    }
     this->tc->SendMsg((char *)s_buf, sizeof(s_buf));
     return 0;
   }
+  // end 行単位で送信する例
 
   return 0;
 }

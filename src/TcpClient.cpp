@@ -15,26 +15,31 @@ TcpClient::~TcpClient()
   int
 TcpClient::InitClientSocket(const char *hostnm, const char *portnm)
 {
+  std::cout << "debug" << std::endl;
   char nbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
   struct addrinfo hints, *res0;
   int errcode;
+  std::cout << "debug" << nbuf << std::endl;
 
   (void) memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
 
+
   if ((errcode = getaddrinfo(hostnm, portnm, &hints, &res0)) != 0) {
     std::cerr << "getaddrinfo():" << gai_strerror(errcode) << std::endl;
     return -1;
   }
+  std::cout << "debug" << nbuf << std::endl;
+
   if ((errcode = getnameinfo(res0->ai_addr, res0->ai_addrlen, nbuf, sizeof(nbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV)) != 0) {
     std::cerr << "getnameinfo():" << gai_strerror(errcode) << std::endl;
     return -1;
   }
-#ifdef _DEBUG
+//#ifdef _DEBUG
   std::cout << "addr=" << nbuf << std::endl;
   std::cout << "port=" << sbuf << std::endl;
-#endif
+//#endif
 
   if ((soc = socket(res0->ai_family, res0->ai_socktype, res0->ai_protocol)) == -1) {
     perror("socket");

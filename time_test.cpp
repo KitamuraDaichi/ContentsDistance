@@ -3,10 +3,22 @@
 #include <string.h>
 #include <iostream>
 #include <sstream>
-
+#include <map>
+#include <typeinfo>
 
 int main()
 {
+  std::map<std::string, int> mp;
+  mp["aa"] = 1;
+  mp["bb"] = 2;
+  mp["cc"] = 3;
+
+  std::map<std::string, int>::iterator itEnd = mp.end();
+  for (std::map<std::string, int>::iterator it = mp.begin(); it != itEnd; ++it) {
+    std::cout << it->first << ": " << it->second << std::endl;
+  }
+  
+/*
   double d = 1000000.3;
   std::ostringstream os;
   os << d;
@@ -32,4 +44,5 @@ int main()
       pnow->tm_hour, pnow->tm_min, pnow->tm_sec);
 
   std::cout << buff << std::endl;
+  */
 }

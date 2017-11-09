@@ -7,7 +7,7 @@ UpdateDistanceAgent::~UpdateDistanceAgent() {
 }
 UpdateDistanceAgent::UpdateDistanceAgent(struct client_data cdata) {
   rc = new ReadConfig("catalog_distance.conf");
-  if (db.connectDb("localhost", "root", "hige@mos", "contents_distance") < 0) {
+  if (db.connectDb("localhost", "root", "", "contents_distance") < 0) {
     fprintf(stderr, "Databaseにconnectできませんでした。\n");
   }
   ts = new Tcp_Server();
@@ -15,13 +15,31 @@ UpdateDistanceAgent::UpdateDistanceAgent(struct client_data cdata) {
 }
 int UpdateDistanceAgent::updateDistanceFromCs() {
   std::cout << "in updateDistanceFromCs" << std::endl;
-  struct neighbor_node_column n_n_c;
   //n_n_c = (struct neighbor_node_column *)malloc(sizeof(struct neighbor_node_column));
   struct message_to_neighbor_nodes mess;
-  this->ts->recvMsgAll((char *)&n_n_c, sizeof(struct neighbor_node_column));
-  std::cout << "own_content_id: " << n_n_c.own_content_id << std::endl;
-  std::cout << "other_content_id: " << n_n_c.other_content_id << std::endl;
-  std::cout << "version_id: " << n_n_c.version_id << std::endl;
+
+  int column_num;
+  this->ts->recvMsgAll((char *)&column_num, sizeof(int));
+  std::cout << "column_num: " << column_num << std::endl;
+
+  int hop_buf;
+  this->ts->recvMsgAll((char *)&hop_buf, sizeof(int));
+  std::cout << "hop: " << hop_buf << std::endl;
+
+  for (int i = 0; i < column_num; i++) {
+	struct neighbor_node_column n_n_c;
+    this->ts->recvMsgAll((char *)&n_n_c, sizeof(struct neighbor_node_column));
+    std::cout << "own_content_id: " << n_n_c.own_content_id << std::endl;
+    std::cout << "other_content_id: " << n_n_c.other_content_id << std::endl;
+    std::cout << "version_id: " << n_n_c.version_id << std::endl;
+
+	double value_chain[hop_buf];
+    this->ts->recvMsgAll((char *)&value_chain, sizeof(double) * hop_buf);
+	for (int j = 0; j < hop_buf; j++) {
+      std::cout << "value_chain: " << value_chain[j] << std::endl;
+	}
+  }
+  return 0;
 
   int hop;
   this->ts->recvMsgAll((char *)&hop, sizeof(int));
@@ -29,7 +47,7 @@ int UpdateDistanceAgent::updateDistanceFromCs() {
   double value_chain[hop];
   this->ts->recvMsgAll((char *)value_chain, sizeof(double) * hop);
   std::cout << "value_chain: " << value_chain[0] << std::endl;
-  return 0;
+
   this->ts->recvMsgAll((char *)&mess, sizeof(struct message_to_neighbor_nodes));
 
   std::cout << "start_content_id: " << mess.start_content_id << std::endl;

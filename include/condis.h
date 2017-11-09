@@ -8,6 +8,7 @@
 #include <vector>
 #include <TcpServer.h>
 #include <TcpClient.h>
+#include <map>
 
 #define UPDATE_DISTANCE_FROM_CS 16
 #define UPDATE_DISTANCE_SECOND 17
@@ -56,6 +57,8 @@ class UpdateDistance {
     TcpClient *tc;
     ReadConfig *rc;
     //std::vector<struct neighbor_node_column> vec_neighbor_node_column;
+    std::map<std::string, std::vector<struct neighbor_node_column> > dest_compless_map;
+    //std::map<std::string, std::string>dest_compless_map;
     struct neighbor_node_column *nncp;
     int start(int port_num);
     void updateDistanceFromCs();
