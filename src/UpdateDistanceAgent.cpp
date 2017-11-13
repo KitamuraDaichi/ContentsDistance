@@ -199,8 +199,11 @@ int UpdateDistanceAgent::updateDistanceFromCs() {
       next_value_chain[hop] = (double)next_value_chain[hop - 1] / (double)((*v_itr).degree);
       //std::cout << "value_chain1: " << next_value_chain[hop - 1] << std::endl;
       //std::cout << "value_chain2: " << next_value_chain[hop - 1] / (double)((*v_itr).degree) << std::endl;
+      //174       for (int t = 0; t < hop + 1; t++) {
+      //175         std::cout << "value_chain[" << t << "]: " << next_value_chain[t] << std::endl;
+      //176       }
       for (int t = 0; t < hop + 1; t++) {
-        std::cout << "value_chain: " << next_value_chain[t] << std::endl;
+        std::cout << "value_chain[" << t << "]: " << next_value_chain[t] << std::endl;
       }
       char *next_node_chain = (char *)((char *)next_value_chain + sizeof(double) * (hop + 1));
       memcpy(next_node_chain, (char *)((*v_itr).n_n_c_p) + sizeof(struct neighbor_node_column) + sizeof(double) * hop, sizeof(char) * 34 * (hop - 1));
