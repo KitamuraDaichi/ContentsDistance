@@ -146,6 +146,7 @@ int UpdateDistanceAgent::updateDistanceFromCs() {
       + (sizeof(neighbor_node_column) + (sizeof(double) * (hop + 1)) + (sizeof(char) * 34 * (hop)))
       * it->second.size()];
     struct message_header *next_header = (struct message_header *)s_buf;
+    setupMsgHeader(next_header, UPDATE_DISTANCE, 0, 0);
     int *next_column_num = (int *)((char *)next_header + sizeof(struct message_header));
     *next_column_num = it->second.size();
     int *next_hop = (int *)((char *)next_column_num + sizeof(int));
@@ -182,6 +183,19 @@ int UpdateDistanceAgent::updateDistanceFromCs() {
       next_n_n_c = (struct neighbor_node_column *)((char *)next_node_chain + sizeof(char) * 34 * hop);
     }
     if (it->first == "10.58.58.4") {
+      in_port_t gm_port;
+      rc->getParam("CONTENT_DISTANCE_PORT", &gm_port);
+      ostringstream os;
+      os << gm_port;
+      std::string str_gm_port = os.str();
+      TcpClient *tc2;
+      tc2 = new TcpClient();
+      if (tc2->InitClientSocket(it->first.c_str(), str_gm_port.c_str()) == -1) {
+        std::cout << "send error" << std::endl;
+      }
+      std::cout << "debug 3" << std::endl;
+      tc2->SendMsg((char *)s_buf, sizeof(s_buf));
+      std::cout << "debug 5" << std::endl;
     }
     
     //std::cout << "next_header: " << *next_header << std::endl;
