@@ -105,6 +105,7 @@ UpdateDistance::UpdateDistance() {
 int UpdateDistance::setupUpdate() {
   std::cout << "in setupUpdate" << std::endl;
   std::string query;
+  // mysqlから隣接ノードテーブルを読み出し
   query = "select * from neighbor_nodes";
   int tmp;
   if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
@@ -112,7 +113,6 @@ int UpdateDistance::setupUpdate() {
     return -1;
   }
 
-  // mysqlから隣接ノードテーブルを読み出し
   MYSQL_ROW row;
   int count = mysql_num_rows(this->db.result);
   if ((this->nncp = (struct neighbor_node_column *)malloc(count * sizeof(struct neighbor_node_column))) == NULL) {

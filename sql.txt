@@ -1,0 +1,4 @@
+create database contents_distance;
+create table contents_distance.distances (own_content_id varchar(50), other_content_id varchar(50), hop int, distance int);
+create table contents_distance.own_contents (own_content_id varchar(50));
+

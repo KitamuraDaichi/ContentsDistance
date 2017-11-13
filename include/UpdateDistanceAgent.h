@@ -23,12 +23,15 @@ class UpdateDistanceAgent {
     ~UpdateDistanceAgent();
     UpdateDistanceAgent(struct client_data cdata);
     Tcp_Server *ts;
+    std::map<std::string, std::vector<struct message_and_next_content_id> > dest_compless_map;
     int updateDistanceFromCs();
     void updateDistanceFromGm();
     int distance(std::string own_id, std::string other_id);
-    int addDB(struct message_to_neighbor_nodes mess);
-    int existColumn(std::string own_content_id);
-    int propagateUpdate(struct node_id own_content_id);
+    int addDb(char *own_content_id, char *other_content_id, char *version_id, double *value_chain, int hop, char *path_chain, std::string recv_time_stamp);
+    int existColumn(char *content_id);
+    int existSameRouteColumn(char *own_content_id, char *other_content_id, char *path_chain);
+    int deleteColumn(char *own_content_id, char *other_content_id, char *path_chain);
+    int propagateUpdate();
     int calculateDistances(struct node_id other_content_id);
 };
 
@@ -40,4 +43,10 @@ struct propagate_thread_arg {
   struct message_second ms;
   int agent_num;
   int thread_num;
+};
+
+struct message_and_next_content_id {
+  char *n_n_c_p;
+  char next_content_id[34];
+  int degree;
 };

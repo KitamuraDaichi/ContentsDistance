@@ -23,9 +23,6 @@ void start_point_start() {
 
 
 int main() {
-  //start_point_start();
-  //return 0;
-
   //ここから前のやつ
   UpdateDistance *ud;
   int server_port = 5566;
@@ -33,13 +30,11 @@ int main() {
   ud = new UpdateDistance();
   ud->start(server_port);
 
-  /*
   std::string own_id = "aaaa";
   std::string other_id = "bbbb";
   if (ud->distance(own_id, other_id) < 0) {
     std::cerr << "このコンテンツはこのサーバの管理下ではありません。" << std::endl;
   }
-  */
   //ここまで前のやつ
   /*
   ts = new Tcp_Server();
