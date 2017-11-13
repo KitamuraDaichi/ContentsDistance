@@ -170,52 +170,29 @@ int UpdateDistanceAgent::updateDistanceFromCs() {
       }
       //std::cout << "value_chain: " << *((double *)(((*v_itr).n_n_c_p) + sizeof(struct neighbor_node_column))) << std::endl;
       next_value_chain[hop] = (double)next_value_chain[hop - 1] / (double)((*v_itr).degree);
-      std::cout << "value_chain1: " << next_value_chain[hop - 1] << std::endl;
-      std::cout << "value_chain2: " << next_value_chain[hop - 1] / (double)((*v_itr).degree) << std::endl;
-      /*
+      //std::cout << "value_chain1: " << next_value_chain[hop - 1] << std::endl;
+      //std::cout << "value_chain2: " << next_value_chain[hop - 1] / (double)((*v_itr).degree) << std::endl;
       for (int t = 0; t < hop + 1; t++) {
         std::cout << "value_chain: " << next_value_chain[t] << std::endl;
       }
-      */
       char *next_node_chain = (char *)((char *)next_value_chain + sizeof(double) * (hop + 1));
       memcpy(next_node_chain, (char *)((*v_itr).n_n_c_p) + sizeof(struct neighbor_node_column) + sizeof(double) * hop, sizeof(char) * 34 * (hop - 1));
       memcpy(next_node_chain + sizeof(char) * 34 * (hop - 1), (char *)((*v_itr).n_n_c_p) + sizeof(char) * 34, sizeof(char) * 34);
       next_n_n_c = (struct neighbor_node_column *)((char *)next_node_chain + sizeof(char) * 34 * hop);
     }
-    if (it->first == "10.58.58.4") {
-      in_port_t gm_port;
-      rc->getParam("CONTENT_DISTANCE_PORT", &gm_port);
-      ostringstream os;
-      os << gm_port;
-      std::string str_gm_port = os.str();
-      TcpClient *tc2;
-      tc2 = new TcpClient();
-      if (tc2->InitClientSocket(it->first.c_str(), str_gm_port.c_str()) == -1) {
-        std::cout << "send error" << std::endl;
-      }
-      std::cout << "debug 3" << std::endl;
-      tc2->SendMsg((char *)s_buf, sizeof(s_buf));
-      std::cout << "debug 5" << std::endl;
+    in_port_t gm_port;
+    rc->getParam("CONTENT_DISTANCE_PORT", &gm_port);
+    ostringstream os;
+    os << gm_port;
+    std::string str_gm_port = os.str();
+    TcpClient *tc2;
+    tc2 = new TcpClient();
+    if (tc2->InitClientSocket(it->first.c_str(), str_gm_port.c_str()) == -1) {
+      std::cout << "send error" << std::endl;
     }
-    
-    //std::cout << "next_header: " << *next_header << std::endl;
-    /*
-    std::cout << "next_column_num: " << *next_column_num << std::endl;
-    std::cout << "next_hop: " << *next_hop << std::endl;
-    next_n_n_c = (struct neighbor_node_column *)((char *)next_hop + sizeof(int));
-    for (v_itr = (it->second).begin(); v_itr != v_itrEnd; ++v_itr) {
-      std::cout << "own_id: " << next_n_n_c->own_content_id << std::endl;
-      std::cout << "oth_id: " << next_n_n_c->other_content_id << std::endl;
-      std::cout << "ver_id: " << next_n_n_c->version_id << std::endl;
-      double *next_value_chain = (double *)((char *)next_n_n_c + sizeof(struct neighbor_node_column));
-      for (int i = 0; i < hop + 1; i++) {
-        std::cout << "value_chain: " << next_value_chain[i] << std::endl;
-      }
-      char *next_node_chain = (char *)((char *)next_value_chain + sizeof(double) * (hop + 1));
-      std::cout << "next_node_chain: " << next_node_chain << std::endl;
-      next_n_n_c = (struct neighbor_node_column *)((char *)next_node_chain + sizeof(char) * 34 * hop);
-    }
-    */
+    std::cout << "debug 3" << std::endl;
+    tc2->SendMsg((char *)s_buf, sizeof(s_buf));
+    std::cout << "debug 5" << std::endl;
   }
   return 1; 
 }
