@@ -5,6 +5,7 @@
 #include <sstream>
 #include <map>
 #include <typeinfo>
+#include <mysql/mysql.h>
 
 int main()
 {

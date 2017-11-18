@@ -18,13 +18,13 @@
 void start_point_start() {
   UpdateDistance *ud;
   ud = new UpdateDistance();
-  ud->setupUpdate();
+  ud->setupUpdate2();
 }
 
 
 int main() {
-  //start_point_start();
-  //return 0;
+  start_point_start();
+  return 0;
 
   //ここから前のやつ
   UpdateDistance *ud;

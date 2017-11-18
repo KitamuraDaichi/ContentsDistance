@@ -14,6 +14,12 @@
 #define UPDATE_DISTANCE_SECOND 17
 #define UPDATE_DISTANCE 18
 #define INITIAL_VALUE 1000.0
+#define CONTENT_ID_SIZE 34
+#define VERSION_ID_SIZE 26
+#define IP_SIZE 34
+#define MAX_HOP 3
+#define VALUE_SIZE 10
+#define MAX_COLUMN_NUM 100
 
 void *cd_thread(void *arg);
 
@@ -53,6 +59,7 @@ class UpdateDistance {
     UpdateDistance();
 
     int setupUpdate();
+    int setupUpdate2();
     Tcp_Server *ts;
     TcpClient *tc;
     ReadConfig *rc;
@@ -67,6 +74,7 @@ class UpdateDistance {
 };
 void *cd_thread(void *arg);
 void *cs_thread(void *arg);
+void *send_each_ip(void *arg);
 
 struct cd_thread_arg {
   UpdateDistance *ud;
