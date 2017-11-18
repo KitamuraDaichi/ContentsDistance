@@ -81,15 +81,36 @@ int UpdateDistanceAgent::updateDistanceFromCs() {
       std::cerr << "sendQuery返り値: " << tmp << std::endl;
       return -1;
     }
+    // もう既にpath chainにあれば飛ばす処理
     MYSQL_ROW row;
     int count = mysql_num_rows(this->db.result);
     struct neighbor_node_column nncp[count];
     int k = 0;
+    std::string tmp_start_id = n_n_c->own_content_id;
+    std::string tmp_path_string[hop - 1];
+    for (int j = 0; j < hop - 1; j++) {
+      char tmp_path[34];
+      memcpy(tmp_path, (char *)path_chain + (sizeof(char) * 34 * j), sizeof(char) * 34);
+      tmp_path_string[j] = tmp_path;
+    }
     while ((row = mysql_fetch_row(this->db.result))) {
       struct neighbor_node_column nnc;
       strcpy(nnc.own_content_id, row[0]);
       strcpy(nnc.other_content_id, row[1]);
       strcpy(nnc.version_id, row[2]);
+      std::string tmp_dest_id = nnc.other_content_id;
+      if (tmp_dest_id == tmp_start_id) {
+        continue;
+      }
+      int skip_flag = 0;
+      for (int j = 0; j < hop - 1; j++) {
+        if (tmp_dest_id == tmp_path_string[j]) {
+          skip_flag = 1;
+        }
+      }
+      if (skip_flag == 1) {
+        continue;
+      }
       memcpy(&(nncp[k]), &nnc, sizeof(neighbor_node_column));
       k++;
     }
@@ -112,6 +133,12 @@ int UpdateDistanceAgent::updateDistanceFromCs() {
     // end nncpに隣接ノードテーブルを作成
     arr_n_n_c_p = (char *)((char *)path_chain + (sizeof(char) * 34) * (hop - 1));
   }
+  // 最大ホップ数を超えていたら終了
+  if (hop >= MAXHOP) {
+    return 1;
+  }
+  // end 最大ホップ数を超えていたら終了
+
   struct neighbor_node_column *start_p = (struct neighbor_node_column *)arr_n_n_c;
   for (int l = 0; l < column_num; l++) {
     std::cout << "s_own_id: " << start_p->own_content_id << std::endl;
@@ -172,8 +199,11 @@ int UpdateDistanceAgent::updateDistanceFromCs() {
       next_value_chain[hop] = (double)next_value_chain[hop - 1] / (double)((*v_itr).degree);
       //std::cout << "value_chain1: " << next_value_chain[hop - 1] << std::endl;
       //std::cout << "value_chain2: " << next_value_chain[hop - 1] / (double)((*v_itr).degree) << std::endl;
+      //174       for (int t = 0; t < hop + 1; t++) {
+      //175         std::cout << "value_chain[" << t << "]: " << next_value_chain[t] << std::endl;
+      //176       }
       for (int t = 0; t < hop + 1; t++) {
-        std::cout << "value_chain: " << next_value_chain[t] << std::endl;
+        std::cout << "value_chain[" << t << "]: " << next_value_chain[t] << std::endl;
       }
       char *next_node_chain = (char *)((char *)next_value_chain + sizeof(double) * (hop + 1));
       memcpy(next_node_chain, (char *)((*v_itr).n_n_c_p) + sizeof(struct neighbor_node_column) + sizeof(double) * hop, sizeof(char) * 34 * (hop - 1));

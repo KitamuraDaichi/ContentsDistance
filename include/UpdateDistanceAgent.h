@@ -13,6 +13,8 @@
 #include <map>
 #include <time.h>
 
+#define MAXHOP 3
+
 class UpdateDistanceAgent {
   private: 
     MysqlAccess db;
