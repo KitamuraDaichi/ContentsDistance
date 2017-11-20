@@ -13,6 +13,53 @@ UpdateDistanceAgent::UpdateDistanceAgent(struct client_data cdata) {
   ts = new Tcp_Server();
   ts->cdata = cdata;
 }
+int UpdateDistanceAgent::updateCvalueNeighbor() {
+  std::cout << "in updateupdateCvalueNeighbor" << std::endl;
+  char time_buff[] = "";
+  time_t now = time(NULL);
+  struct tm *pnow = localtime(&now);
+  sprintf(time_buff, "%04d%02d%02d%02d%02d", pnow->tm_year + 1900, pnow->tm_mon + 1, pnow->tm_mday, pnow->tm_hour, pnow->tm_min);
+  std::string recv_time_stamp = time_buff;
+
+  int column_num[MAX_HOP];
+  for (int i = 0; i < MAX_HOP; i++) {
+    this->ts->recvMsgAll((char *)(&column_num[i]), sizeof(int));
+    std::cout << "hop: " << column_num[i] << std::endl;
+  }
+  for (int i = 0; i < MAX_HOP - 1; i++) {
+    for (int c = 0; c < column_num[i]; c++) {
+      struct neighbor_node_column n_n_c;
+      this->ts->recvMsgAll((char *)(&n_n_c), sizeof(struct neighbor_node_column));
+      double now_value;
+      this->ts->recvMsgAll((char *)(&now_value), sizeof(double));
+      char value_chain[sizeof(char) * VALUE_SIZE * (i + 1)];
+      this->ts->recvMsgAll((char *)value_chain, sizeof(char) * VALUE_SIZE * (i + 1));
+      char node_chain[sizeof(char) * (CONTENT_ID_SIZE * (i + 1) + i)];
+      this->ts->recvMsgAll((char *)node_chain, sizeof(char) * (CONTENT_ID_SIZE * (i + 1) + i));
+      std::cout << "startid: " << n_n_c.own_content_id << std::endl;
+      std::cout << "next_id: " << n_n_c.other_content_id << std::endl;
+      std::cout << "versiid: " << n_n_c.version_id << std::endl;
+      std::cout << "next_va: " << now_value << std::endl;
+      std::cout << "val_cha: " << value_chain << std::endl;
+      std::cout << "nod_cha: " << node_chain << std::endl;
+      int hop = i + 1;
+      char *ends;
+      double next_value = now_value / this->nodeDegree(n_n_c.other_content_id);
+      std::string next_value_chain = value_chain;
+      ostringstream os;
+      os << now_value;
+      next_value_chain = os.str() + "," + next_value_chain;
+      if (strcmp(n_n_c.own_content_id, n_n_c.other_content_id) == 0) {
+        this->addNeighborNodes(n_n_c.other_content_id, n_n_c.own_content_id, n_n_c.version_id);
+        this->addCValue(n_n_c.other_content_id, node_chain, n_n_c.version_id, hop, next_value, value_chain, "NULL", recv_time_stamp);
+      } else {
+        this->addCValue(n_n_c.other_content_id, n_n_c.own_content_id, n_n_c.version_id, hop, next_value, value_chain, node_chain, recv_time_stamp);
+      }
+    }
+  }
+  return 0;
+}
+
 int UpdateDistanceAgent::updateDistanceFromCs() {
   std::cout << "in updateDistanceFromCs" << std::endl;
   struct message_to_neighbor_nodes mess;
@@ -226,6 +273,79 @@ int UpdateDistanceAgent::updateDistanceFromCs() {
   }
   return 1; 
 }
+
+int UpdateDistanceAgent::addNeighborNodes(char *own_content_id, char *other_content_id, char *version_id) {
+  std::string owncid = own_content_id;
+  std::string othcid = other_content_id;
+  std::string versid = version_id;
+  std::string id_first = owncid.substr(0, 8);
+  std::string next_server_ip;
+  rc->getParam(id_first, &next_server_ip);
+
+  if (existSameNeighborNode(own_content_id, other_content_id) == 1) {
+    deleteColumnNeighborNode(own_content_id, other_content_id);
+  }
+  std::string query = "insert into neighbor_nodes (own_content_id, other_content_id, version_id, next_server_ip) values(\""
+      + owncid + "\", \"" + othcid + "\", \"" + versid + "\", \"" + next_server_ip + "\");";
+  int tmp;
+  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+    std::cerr << "sendQuery返り値: " << tmp << std::endl;
+    return -1;
+  }
+  char **result = this->db.getResult();
+  if (result != NULL) {
+    std::cout << result[0] << std::endl;
+  }
+  return 0;
+}
+
+int UpdateDistanceAgent::addCValue(char *own_content_id, char *other_content_id, char *version_id, int hop, double next_value, char *value_chain, char *node_chain, std::string recv_time_stamp) {
+  std::string owncid = own_content_id;
+  std::string othcid = other_content_id;
+  std::string versid = version_id;
+  std::string valcha = value_chain;
+  std::string nodcha = node_chain;
+  ostringstream os;
+  os << hop;
+  std::string hop_s = os.str();
+  ostringstream os2;
+  os2 << next_value;
+  std::string next_value_s = os2.str();
+
+  if (existSameRouteColumn(own_content_id, other_content_id, node_chain) == 1) {
+    deleteColumnCValue(own_content_id, other_content_id, node_chain);
+  }
+  std::string query = "insert into c_values (own_content_id, other_content_id, version_id, hop, next_value, value_chain, path_chain, recv_time_stamp) values(\"" + owncid + "\", \"" + othcid + "\", \"" + versid + "\", \"" + hop_s + "\", \"" + next_value_s + "\", \""  + valcha + "\", \"" + nodcha + "\", \"" + recv_time_stamp + "\");";
+  int tmp;
+  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+    std::cerr << "sendQuery返り値: " << tmp << std::endl;
+    return -1;
+  }
+  char **result = this->db.getResult();
+  if (result != NULL) {
+    std::cout << result[0] << std::endl;
+  }
+
+  return 0;
+}
+
+int UpdateDistanceAgent::nodeDegree(char *content_id) {
+  std::string ci = content_id;
+  std::string query = "select * from where own_content_id = \"" + ci + "\";";
+  int tmp;
+  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+    std::cerr << "sendQuery返り値: " << tmp << std::endl;
+    return NULL;
+  }
+  int degree = mysql_num_rows(this->db.result);
+  if (degree == 0) {
+    std::cerr << "このコンテンツを所有してません" << std::endl;
+    exit(1);
+  }
+
+  return degree;
+}
+
 void UpdateDistanceAgent::updateDistanceFromGm() {
   std::cout << "in updateDistanceFromGm" << std::endl;
 }
@@ -315,6 +435,25 @@ int UpdateDistanceAgent::existColumn(char *content_id) {
   return 1;
 }
 
+int UpdateDistanceAgent::existSameNeighborNode(char *own_content_id, char *other_content_id) {
+  std::string ownci = own_content_id;
+  std::string othci = other_content_id;
+  std::string query;
+
+  query = "select * from neighbor_nodes where own_content_id = \"" + ownci + "\" and other_content_id = \"" + othci + "\";";
+
+  if (this->db.sendQuery((char *)query.c_str()) < 0) {
+    return -1;
+  }
+
+  if (this->db.getRowNum() > 0) {
+    return 1;
+  } else {
+    return 0;
+  }
+  return 0;
+}
+
 int UpdateDistanceAgent::existSameRouteColumn(char *own_content_id, char *other_content_id, char *path_chain) {
   std::string ownci = own_content_id;
   std::string othci = other_content_id;
@@ -334,7 +473,34 @@ int UpdateDistanceAgent::existSameRouteColumn(char *own_content_id, char *other_
   }
   return 0;
 }
+int UpdateDistanceAgent::deleteColumnNeighborNode(char *own_content_id, char *other_content_id) {
+  std::string ownci = own_content_id;
+  std::string othci = other_content_id;
+  std::string query;
 
+  query = "delete from neighbor_nodes where own_content_id = \"" + ownci + "\" and other_content_id = \"" + othci + "\";";
+
+  if (this->db.sendQuery((char *)query.c_str()) < 0) {
+    return -1;
+  }
+
+  return 1;
+}
+
+int UpdateDistanceAgent::deleteColumnCValue(char *own_content_id, char *other_content_id, char *path_chain) {
+  std::string ownci = own_content_id;
+  std::string othci = other_content_id;
+  std::string pathc = path_chain;
+  std::string query;
+
+  query = "delete from c_values where own_content_id = \"" + ownci + "\" and other_content_id = \"" + othci + "\" and path_chain = \"" + pathc + "\";";
+
+  if (this->db.sendQuery((char *)query.c_str()) < 0) {
+    return -1;
+  }
+
+  return 1;
+}
 int UpdateDistanceAgent::deleteColumn(char *own_content_id, char *other_content_id, char *path_chain) {
   std::string ownci = own_content_id;
   std::string othci = other_content_id;

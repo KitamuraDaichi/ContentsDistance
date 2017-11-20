@@ -23,8 +23,8 @@ void start_point_start() {
 
 
 int main() {
-  start_point_start();
-  return 0;
+  //start_point_start();
+  //return 0;
 
   //ここから前のやつ
   UpdateDistance *ud;

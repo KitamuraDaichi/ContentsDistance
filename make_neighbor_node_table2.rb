@@ -1,9 +1,6 @@
 #!/usr/bin/env ruby
 require "date"
-<<<<<<< HEAD
 require "bigdecimal"
-=======
->>>>>>> 21ca05ea584dce1ae0b0e17d50e27035ff0de91d
 
 # Catalogue Server ID
 $server_number = 0
@@ -59,19 +56,11 @@ end
 
 def make_tables()
   command = "mysql -uroot -e 'create table #{$database_name}.#{$neighbor_node_table_name} (own_content_id varchar(33), other_content_id varchar(33), version_id varchar(25), next_server_ip varchar(33))'"
-<<<<<<< HEAD
-#  if !system(command) then
-#    STDERR.puts "#{$neighbor_node_table_name}を作れませんでした。"
-#  end
-
-  command = "mysql -uroot -e 'create table #{$database_name}.#{$c_value_table_name} (own_content_id varchar(33), other_content_id varchar(33), version_id varchar(25), hop int, next_value double(10, 5), value_chain varchar(257), path_chain varchar(199), recv_time_stamp varchar(13))'"
-=======
   if !system(command) then
     STDERR.puts "#{$neighbor_node_table_name}を作れませんでした。"
   end
 
   command = "mysql -uroot -e 'create table #{$database_name}.#{$c_value_table_name} (own_content_id varchar(33), other_content_id varchar(33), version_id varchar(25), hop int, value_chain varchar(257), path_chain varchar(199), recv_time_stamp varchar(13))'"
->>>>>>> 21ca05ea584dce1ae0b0e17d50e27035ff0de91d
   if !system(command) then
     STDERR.puts "#{$c_value_table_name}を作れませんでした。"
   end
@@ -110,7 +99,6 @@ def delete_column_from_neighbor_node_table()
   end
 end
 
-<<<<<<< HEAD
 def insert_c_value_table(own_node, other_node, other_node_server_id)
   own_node_id = conv_fileid_to_catid(own_node, $server_number)
   other_node_id = conv_fileid_to_catid(other_node, other_node_server_id)
@@ -123,8 +111,6 @@ def insert_c_value_table(own_node, other_node, other_node_server_id)
   end
 end
 
-=======
->>>>>>> 21ca05ea584dce1ae0b0e17d50e27035ff0de91d
 def load_nodeid_round_robin()
   puts $network_filename
   ($hash_node.sort).each_with_index {|id_node_pair, i|
@@ -134,12 +120,8 @@ def load_nodeid_round_robin()
     puts id_node_pair[0]
     if (i % $server_num) == $server_number.to_i then
       id_node_pair[1].arr_neighbor_node.each {|other_node_id|
-<<<<<<< HEAD
         #insert_neighbor_node_table(id_node_pair[0], other_node_id, $arr_ip[$hash_node[other_node_id].server_id()], $hash_node[other_node_id].server_id())
         insert_c_value_table(id_node_pair[0], other_node_id, $hash_node[other_node_id].server_id())
-=======
-        insert_neighbor_node_table(id_node_pair[0], other_node_id, $arr_ip[$hash_node[other_node_id].server_id()], $hash_node[other_node_id].server_id())
->>>>>>> 21ca05ea584dce1ae0b0e17d50e27035ff0de91d
       }
     end
   }
@@ -180,10 +162,3 @@ load_node()
 load_nodeid_round_robin()
 #p $hash_node[0]
 #p $hash_node[0].arr_neighbor_node
-=======
-#make_tables()
-load_node()
-load_nodeid_round_robin()
-p $hash_node[0]
-p $hash_node[0].arr_neighbor_node
->>>>>>> 21ca05ea584dce1ae0b0e17d50e27035ff0de91d

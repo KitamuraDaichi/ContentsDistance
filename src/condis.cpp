@@ -525,7 +525,7 @@ void *cd_thread(void *arg) {
 
     if (rmsg_h.code == UPDATE_DISTANCE) {
       std::cout << "rmsg_h.code: " << (int)rmsg_h.code << endl;
-      uda->updateDistanceFromCs();
+      uda->updateCvalueNeighbor();
     } else if (rmsg_h.code == UPDATE_DISTANCE_SECOND) {
       std::cout << "rmsg_h.code: " << (int)rmsg_h.code << endl;
       uda->updateDistanceFromGm();
