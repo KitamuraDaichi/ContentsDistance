@@ -3,7 +3,7 @@ require "date"
 require "bigdecimal"
 
 # Catalogue Server ID
-$server_number = 0
+$server_number = 1
 # ラウンドロビンでノードをサーバに分ける
 $network_filename = ARGV[0]
 $server_num = 3
@@ -39,12 +39,9 @@ class Node
   def oneHopPush(other_id)
     @arr_neighbor_node.push(other_id)
   end
-<<<<<<< HEAD
   def degree()
     return @arr_neighbor_node.length
   end
-=======
->>>>>>> 21ca05ea584dce1ae0b0e17d50e27035ff0de91d
 end
 
 def make_database()
@@ -60,7 +57,7 @@ def make_tables()
     STDERR.puts "#{$neighbor_node_table_name}を作れませんでした。"
   end
 
-  command = "mysql -uroot -e 'create table #{$database_name}.#{$c_value_table_name} (own_content_id varchar(33), other_content_id varchar(33), version_id varchar(25), hop int, value_chain varchar(257), path_chain varchar(199), recv_time_stamp varchar(13))'"
+  command = "mysql -uroot -e 'create table #{$database_name}.#{$c_value_table_name} (own_content_id varchar(33), other_content_id varchar(33), version_id varchar(25), hop int, next_value double(10, 5), value_chain varchar(257), path_chain varchar(199), recv_time_stamp varchar(13))'"
   if !system(command) then
     STDERR.puts "#{$c_value_table_name}を作れませんでした。"
   end
@@ -120,7 +117,7 @@ def load_nodeid_round_robin()
     puts id_node_pair[0]
     if (i % $server_num) == $server_number.to_i then
       id_node_pair[1].arr_neighbor_node.each {|other_node_id|
-        #insert_neighbor_node_table(id_node_pair[0], other_node_id, $arr_ip[$hash_node[other_node_id].server_id()], $hash_node[other_node_id].server_id())
+        insert_neighbor_node_table(id_node_pair[0], other_node_id, $arr_ip[$hash_node[other_node_id].server_id()], $hash_node[other_node_id].server_id())
         insert_c_value_table(id_node_pair[0], other_node_id, $hash_node[other_node_id].server_id())
       }
     end
@@ -156,7 +153,6 @@ end
 start()
 #delete_column_from_neighbor_node_table()
 #make_database()
-<<<<<<< HEAD
 make_tables()
 load_node()
 load_nodeid_round_robin()
