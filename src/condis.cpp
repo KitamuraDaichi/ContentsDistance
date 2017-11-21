@@ -366,7 +366,7 @@ void *send_each_ip(void *arg) {
     if (thread_db[i].connectDb("localhost", "root", "", "cfec_database2") < 0) {
       fprintf(stderr, "Databaseにconnectできませんでした。\n");
     }
-    std::string query = "select * from c_values join neighbor_nodes on c_values.own_content_id=neighbor_nodes.own_content_id where next_server_ip=\"" + ip_s + "\" and c_values.hop=" + i_str + ";";
+    std::string query = "select * from c_values join neighbor_nodes on c_values.own_content_id=neighbor_nodes.own_content_id where next_server_ip=\"" + ip_s + "\" and c_values.hop=" + i_str + " and c_values.path_chain not like concat(\"\%\",c_values.other_content_id,\"\%\");";
     int tmp;
     if ((tmp = thread_db[i].sendQuery((char *)query.c_str())) < 0) {
       std::cerr << "sendQuery返り値: " << tmp << std::endl;
@@ -410,7 +410,7 @@ void *send_each_ip(void *arg) {
       }
       int buf_size = (sizeof(struct neighbor_node_column) 
         + sizeof(double) + sizeof(char) * VALUE_SIZE * (i + 1) 
-        + (sizeof(char) * (CONTENT_ID_SIZE + 1)) * (i + 1)) 
+        + (sizeof(char) * (CONTENT_ID_SIZE * (i + 1) + i))) 
       * cn;
 
       char s_buf[buf_size];
@@ -439,6 +439,7 @@ void *send_each_ip(void *arg) {
           n_n_c_p = (struct neighbor_node_column *)((char *)s_n_c + sizeof(char) * (CONTENT_ID_SIZE * (i + 1) + i));
         }
       }
+      tc->SendMsg((char *)s_buf, buf_size);
       char *debug_p = (char *)s_buf;
       while ((char *)debug_p < (char *)n_n_c_p) {
         struct neighbor_node_column *d_n_n_c_p = (struct neighbor_node_column *)debug_p;
@@ -453,6 +454,7 @@ void *send_each_ip(void *arg) {
         std::cout << "nod_cha: " << d_s_n_c << std::endl;
         debug_p = (char *)((char *)d_s_n_c + sizeof(char) * (CONTENT_ID_SIZE));
       }
+      std::cout << "100 end: " << ip << std::endl;
     }
   }
   std::cout << "end: " << ip << std::endl;
