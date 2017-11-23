@@ -1,8 +1,20 @@
+<<<<<<< HEAD
 in setupUpdate2
 ip: 10.58.58.3
 addr=10.58.58.3
 port=5566
 send error
+=======
+=> come into acceptLoop
+in cd_thread
+in cd_thread
+=> CREATE THREAD: thread_id = 140188013582080
+rmsg_h.code: 18
+in updateupdateCvalueNeighbor
+hop: 898
+hop: 0
+hop: 0
+>>>>>>> 0c45603440c6bb8d51d90164c522a5f138ffcebc
 startid: 00000001000000000000000000000001
 next_id: 00000001000000000000000000000001
 versiid: 00000003201711181458
@@ -5391,6 +5403,7 @@ versiid: 00000003201711181458
 next_va: 333.333
 val_cha: 1000
 nod_cha: 00000000000000000000000000000030
+<<<<<<< HEAD
 end: 10.58.58.3
 ip: 10.58.58.4
 addr=10.58.58.4
@@ -15968,3 +15981,7 @@ next_va: 333.333
 val_cha: 1000
 nod_cha: 00000000000000000000000000000030
 end: 10.58.58.2
+=======
+終わり
+=> Connection has been disconected
+>>>>>>> 0c45603440c6bb8d51d90164c522a5f138ffcebc
