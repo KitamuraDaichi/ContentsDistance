@@ -318,7 +318,7 @@ int UpdateDistanceAgent::addNeighborNodes(char *own_content_id, char *other_cont
     std::cerr << "in addNeighborNodes" << std::endl;
     std::cerr << "query: " << query << std::endl;
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
-    return -1;
+    //return -1;
   }
   char **result = this->db.getResult();
   if (result != NULL) {
@@ -349,7 +349,7 @@ int UpdateDistanceAgent::addCValue(char *own_content_id, char *other_content_id,
     std::cerr << "in addCValue" << std::endl;
     std::cerr << "query: " << query << std::endl;
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
-    return -1;
+    //return -1;
   }
   char **result = this->db.getResult();
   if (result != NULL) {
@@ -408,7 +408,7 @@ int UpdateDistanceAgent::addDb(char *own_content_id, char *other_content_id, cha
   if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
     std::cerr << "in addDb"  << std::endl;
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
-    return -1;
+    //return -1;
   }
   char **result = this->db.getResult();
   if (result != NULL) {
@@ -459,7 +459,7 @@ int UpdateDistanceAgent::existColumn(char *content_id) {
     std::cout << "res: " << res << std::endl;
     std::cout << "query: " << query << std::endl;
 
-    return -1;
+    //return -1;
   }
 
   char **result = this->db.getResult();
@@ -476,11 +476,11 @@ int UpdateDistanceAgent::existSameNeighborNode(char *own_content_id, char *other
 
   if (this->db.sendQuery((char *)query.c_str()) < 0) {
     std::cerr << "in existSameNeighborNode"  << std::endl;
-    return -1;
+    //return -1;
   }
 
   if (this->db.getRowNum() > 0) {
-    return 1;
+    //return 1;
   } else {
     return 0;
   }
@@ -497,11 +497,11 @@ int UpdateDistanceAgent::existSameRouteColumn(char *own_content_id, char *other_
 
   if (this->db.sendQuery((char *)query.c_str()) < 0) {
     std::cerr << "in existSameRouteColumn"  << std::endl;
-    return -1;
+    //return -1;
   }
 
   if (this->db.getRowNum() > 0) {
-    return 1;
+    //return 1;
   } else {
     return 0;
   }
@@ -516,7 +516,7 @@ int UpdateDistanceAgent::deleteColumnNeighborNode(char *own_content_id, char *ot
 
   if (this->db.sendQuery((char *)query.c_str()) < 0) {
     std::cerr << "in deleteColumnNeighborNode"  << std::endl;
-    return -1;
+    //return -1;
   }
 
   return 1;
@@ -532,7 +532,7 @@ int UpdateDistanceAgent::deleteColumnCValue(char *own_content_id, char *other_co
 
   if (this->db.sendQuery((char *)query.c_str()) < 0) {
     std::cerr << "in deleteColumnCValue"  << std::endl;
-    return -1;
+    //return -1;
   }
 
   return 1;
@@ -547,7 +547,7 @@ int UpdateDistanceAgent::deleteColumn(char *own_content_id, char *other_content_
 
   if (this->db.sendQuery((char *)query.c_str()) < 0) {
     std::cerr << "in deleteColumn"  << std::endl;
-    return -1;
+    //return -1;
   }
 
   return 1;

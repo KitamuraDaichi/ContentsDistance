@@ -117,8 +117,8 @@ def load_nodeid_round_robin()
     puts id_node_pair[0]
     if (i % $server_num) == $server_number.to_i then
       id_node_pair[1].arr_neighbor_node.each {|other_node_id|
-        #insert_neighbor_node_table(id_node_pair[0], other_node_id, $arr_ip[$hash_node[other_node_id].server_id()], $hash_node[other_node_id].server_id())
-        insert_c_value_table(id_node_pair[0], other_node_id, $hash_node[other_node_id].server_id())
+        insert_neighbor_node_table(id_node_pair[0], other_node_id, $arr_ip[$hash_node[other_node_id].server_id()], $hash_node[other_node_id].server_id())
+        #insert_c_value_table(id_node_pair[0], other_node_id, $hash_node[other_node_id].server_id())
       }
     end
   }
