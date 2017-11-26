@@ -10,6 +10,7 @@
 //#include <mysql/mysql.h>
 //#include <vector>
 
+pthread_mutex_t propagation_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 MysqlAccess::MysqlAccess() {
   this->initBuf();
 }
@@ -89,9 +90,20 @@ UpdateDistance::UpdateDistance() {
 }
 int UpdateDistance::setupUpdate2() {
   std::cout << "in setupUpdate2" << std::endl;
+  char time_buff[] = "";
+  time_t now = time(NULL);
+  struct tm *pnow = localtime(&now);
+  sprintf(time_buff, "%04d%02d%02d%02d%02d%02d", pnow->tm_year + 1900, pnow->tm_mon + 1, pnow->tm_mday, pnow->tm_hour, pnow->tm_min, pnow->tm_sec);
+  std::string send_time = time_buff;
+  ofstream fout("./send_start_time.csv", ios::app);
+  fout << send_time << std::endl;
+  fout.close();
   std::string query;
+  std::string local_server_ip = LOCAL_SERVER_IP;
   // mysqlから隣接ノードテーブルを読み出し
-  query = "select distinct next_server_ip from neighbor_nodes";
+  //query = "select distinct next_server_ip from neighbor_nodes where next_server_ip != \"" + local_server_ip + "\";";
+  query = "select distinct next_server_ip from neighbor_nodes where next_server_ip = \"10.58.58.2\"";
+  //query = "select distinct next_server_ip from neighbor_nodes";
   int tmp;
   if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
@@ -106,14 +118,26 @@ int UpdateDistance::setupUpdate2() {
     i++;
   }
 	pthread_t thread_id[ip_num];
-  char thread_arg[ip_num][IP_SIZE];
-  for (i = 0; i < ip_num; i++) {
-    memcpy(thread_arg[i], (char *)ip[i], sizeof(char) * IP_SIZE);
-    pthread_create(&thread_id[i], NULL, send_each_ip, (void *)thread_arg[i]); 
-    pthread_join(thread_id[i], NULL);
+  //char thread_arg[ip_num][IP_SIZE];
+  struct send_each_ip_arg thread_arg[PROPAGATION_THREAD_NUM];
+  int max_ip_num = ip_num;
+  int start_thread_num = PROPAGATION_THREAD_NUM;
+  int thread_num;
+  if (ip_num < PROPAGATION_THREAD_NUM) {
+    thread_num = ip_num;
+  } else {
+    thread_num = PROPAGATION_THREAD_NUM;
+  }
+ 
+  for (i = 0; i < thread_num; i++) {
+    //memcpy(thread_arg[i], (char *)ip[i], sizeof(char) * IP_SIZE);
+    thread_arg[i].ip = (char *)ip[i];
+    thread_arg[i].max_ip_num = max_ip_num;
+    thread_arg[i].next_ip_num = &start_thread_num;
+    pthread_create(&thread_id[i], NULL, send_each_ip, (void *)&thread_arg[i]); 
   }
   for (i = 0; i < ip_num; i++) {
-    //pthread_join(thread_id[i], NULL);
+    pthread_join(thread_id[i], NULL);
   }
   return 0;
 }
@@ -346,158 +370,136 @@ int UpdateDistance::distance(std::string own_id, std::string other_id) {
   return 0;
 }
 void *send_each_ip(void *arg) {
-  char ip[IP_SIZE];
-  memcpy(ip, (char *)arg, sizeof(char) * IP_SIZE);
-  std::cout << "ip: " << ip << std::endl;
+  char *ip;
+  ip = (char *)(((struct send_each_ip_arg *)arg)->ip);
+  int max_ip_num = (int)(((struct send_each_ip_arg *)arg)->max_ip_num);
+  int *next_ip_p = (int *)(((struct send_each_ip_arg *)arg)->next_ip_num);
   std::string ip_s = ip;
   fflush(stdout);
 
-  // 送信するデータの必要な量を知る
-  MysqlAccess thread_db[MAX_HOP]; 
-  int column_num[MAX_HOP];
-  int i = 0;
-  int send_size = 0;
+  int breakflag = 0;
+  //do {
+    // 送信するデータの必要な量を知る
+    MysqlAccess thread_db[MAX_HOP]; 
+    int column_num[MAX_HOP];
+    int i = 0;
+    int send_size = 0;
     // headerとそれぞれのホップ数のカラム数
-  send_size += sizeof(struct message_header) + sizeof(int) * MAX_HOP;
-  for (i = 0; i < MAX_HOP; i++) {
-    ostringstream os;
-    os << i;
-    std::string i_str = os.str();
-    if (thread_db[i].connectDb("localhost", "root", "", "cfec_database2") < 0) {
-      fprintf(stderr, "Databaseにconnectできませんでした。\n");
-    }
-    std::string query = "select * from c_values join neighbor_nodes on c_values.own_content_id=neighbor_nodes.own_content_id where next_server_ip=\"" + ip_s + "\" and c_values.hop=" + i_str + " and c_values.path_chain not like concat(\"\%\",c_values.other_content_id,\"\%\");";
-    int tmp;
-    if ((tmp = thread_db[i].sendQuery((char *)query.c_str())) < 0) {
-      std::cerr << "sendQuery返り値: " << tmp << std::endl;
-      return NULL;
-    }
-    column_num[i] = mysql_num_rows(thread_db[i].result);
-    /*
-    send_size += (sizeof(struct neighbor_node_column) 
-        + sizeof(double) + sizeof(char) * VALUE_SIZE * (i + 1) 
-        + (sizeof(char) * (CONTENT_ID_SIZE + 1)) * (i + 1)) 
-      * column_num[i];
-      */
-  }
-  // end 送信するデータの必要な量を知る
-  // headerだけ先に送る
-  TcpClient *tc;
-  tc = new TcpClient();
-  if (tc->InitClientSocket(ip, "5566") == -1) {
-    std::cout << "send error" << std::endl;
-  }
-  char s_head_buf[sizeof(struct message_header) + sizeof(int) * MAX_HOP];
-  struct message_header *s_header = (struct message_header *)s_head_buf;
-  setupMsgHeader(s_header, UPDATE_DISTANCE, 0, 0);
-  int *column_num_start = (int *)((char *)s_header + sizeof(struct message_header));
-  int *c_p = column_num_start;
-  for (i = 0; i < MAX_HOP; i++) {
-    *c_p = column_num[i];
-    c_p = (int *)((char *)c_p + sizeof(int));
-  }
-  tc->SendMsg((char *)s_head_buf, sizeof(struct message_header) + sizeof(int) * MAX_HOP);
-  // end headerだけ先に送る
-  
-  MYSQL_ROW row;
-  for (i = 0; i < MAX_HOP; i++) {
-    for (int total_col_num = 0; total_col_num < column_num[i]; total_col_num+=MAX_COLUMN_NUM) {
-      int cn;
-      if (total_col_num + MAX_COLUMN_NUM < column_num[i]) {
-        cn = MAX_COLUMN_NUM;
-      } else {
-        cn = column_num[i] - total_col_num;
+    send_size += sizeof(struct message_header) + sizeof(int) * MAX_HOP;
+    for (i = 0; i < MAX_HOP; i++) {
+      ostringstream os;
+      os << i;
+      std::string i_str = os.str();
+      if (thread_db[i].connectDb("localhost", "root", "", "cfec_database2") < 0) {
+        fprintf(stderr, "Databaseにconnectできませんでした。\n");
       }
-      int buf_size = (sizeof(struct neighbor_node_column) 
-        + sizeof(double) + sizeof(char) * VALUE_SIZE * (i + 1) 
-        + (sizeof(char) * (CONTENT_ID_SIZE * (i + 1) + i))) 
-      * cn;
+      std::string query = "select * from c_values join neighbor_nodes on c_values.own_content_id=neighbor_nodes.own_content_id where next_server_ip=\"" + ip_s + "\" and c_values.hop=" + i_str + " and c_values.path_chain not like concat(\"\%\",c_values.other_content_id,\"\%\");";
+      int tmp;
+      if ((tmp = thread_db[i].sendQuery((char *)query.c_str())) < 0) {
+        std::cerr << "sendQuery返り値: " << tmp << std::endl;
+        return NULL;
+      }
+      column_num[i] = mysql_num_rows(thread_db[i].result);
+      /*
+         send_size += (sizeof(struct neighbor_node_column) 
+         + sizeof(double) + sizeof(char) * VALUE_SIZE * (i + 1) 
+         + (sizeof(char) * (CONTENT_ID_SIZE + 1)) * (i + 1)) 
+       * column_num[i];
+       */
+    }
+    // end 送信するデータの必要な量を知る
+    // headerだけ先に送る
+    TcpClient *tc;
+    tc = new TcpClient();
+    if (tc->InitClientSocket(ip, "5566") == -1) {
+      std::cout << "send error" << std::endl;
+    }
+    char s_head_buf[sizeof(struct message_header) + sizeof(int) * MAX_HOP];
+    struct message_header *s_header = (struct message_header *)s_head_buf;
+    setupMsgHeader(s_header, UPDATE_DISTANCE, 0, 0);
+    int *column_num_start = (int *)((char *)s_header + sizeof(struct message_header));
+    int *c_p = column_num_start;
+    for (i = 0; i < MAX_HOP; i++) {
+      *c_p = column_num[i];
+      c_p = (int *)((char *)c_p + sizeof(int));
+    }
+    tc->SendMsg((char *)s_head_buf, sizeof(struct message_header) + sizeof(int) * MAX_HOP);
+    // end headerだけ先に送る
 
-      char s_buf[buf_size];
-      struct neighbor_node_column *n_n_c_p = (struct neighbor_node_column *)s_buf;
-      int j = 0;
-      //while ((row = mysql_fetch_row(thread_db[i].result))) {
-      for (int c = 0; c < cn; c++) {
-        row = mysql_fetch_row(thread_db[i].result);
-        strcpy(n_n_c_p->own_content_id, row[1]);// start_node
-        strcpy(n_n_c_p->other_content_id, row[9]);// next_node
-        strcpy(n_n_c_p->version_id, row[2]);
-        std::string n_val_str = row[4];
-        double *s_n_v = (double *)((char *)n_n_c_p + sizeof(struct neighbor_node_column));
-        *s_n_v = atof(row[4]);//std::stod(n_val_str);
-        char *s_v_c = (char *)((char *)s_n_v + sizeof(double));
-        memcpy(s_v_c, (char *)row[5], sizeof(char) * VALUE_SIZE * (i + 1));
-        char *s_n_c = (char *)((char *)s_v_c + sizeof(char) * VALUE_SIZE * (i + 1));
-        std::string ownci_s = row[0];
-        std::string node_chain_s = row[6];
-        if (node_chain_s == "NULL") {
-          memcpy(s_n_c, (char *)(ownci_s.c_str()), sizeof(char) * CONTENT_ID_SIZE);
-          n_n_c_p = (struct neighbor_node_column *)((char *)s_n_c + sizeof(char) * CONTENT_ID_SIZE);
+    MYSQL_ROW row;
+    for (i = 0; i < MAX_HOP; i++) {
+      for (int total_col_num = 0; total_col_num < column_num[i]; total_col_num+=MAX_COLUMN_NUM) {
+        int cn;
+        if (total_col_num + MAX_COLUMN_NUM < column_num[i]) {
+          cn = MAX_COLUMN_NUM;
         } else {
-          std::string new_node_chain_s = node_chain_s + "," + ownci_s;
-          memcpy(s_n_c, (char *)(new_node_chain_s.c_str()), sizeof(char) * (CONTENT_ID_SIZE * (i + 1) + i));
-          n_n_c_p = (struct neighbor_node_column *)((char *)s_n_c + sizeof(char) * (CONTENT_ID_SIZE * (i + 1) + i));
+          cn = column_num[i] - total_col_num;
         }
-      }
-      tc->SendMsg((char *)s_buf, buf_size);
-      char *debug_p = (char *)s_buf;
-      while ((char *)debug_p < (char *)n_n_c_p) {
-        struct neighbor_node_column *d_n_n_c_p = (struct neighbor_node_column *)debug_p;
-        std::cout << "startid: " << d_n_n_c_p->own_content_id << std::endl;
-        std::cout << "next_id: " << d_n_n_c_p->other_content_id << std::endl;
-        std::cout << "versiid: " << d_n_n_c_p->version_id << std::endl;
-        double *d_s_n_v = (double *)((char *)d_n_n_c_p + sizeof(struct neighbor_node_column));
-        std::cout << "next_va: " << (*d_s_n_v) << std::endl;
-        char *d_s_v_c = (char *)((char *)d_s_n_v + sizeof(double));
-        std::cout << "val_cha: " << d_s_v_c << std::endl;
-        char *d_s_n_c = (char *)((char *)d_s_v_c + sizeof(char) * VALUE_SIZE * (i + 1));
-        std::cout << "nod_cha: " << d_s_n_c << std::endl;
-        debug_p = (char *)((char *)d_s_n_c + sizeof(char) * (CONTENT_ID_SIZE));
-      }
-      std::cout << "100 end: " << ip << std::endl;
-    }
-  }
-  std::cout << "end: " << ip << std::endl;
-  return NULL;
+        int buf_size = (sizeof(struct neighbor_node_column) 
+            + sizeof(double) + sizeof(char) * VALUE_SIZE * (i + 1) 
+            + (sizeof(char) * (CONTENT_ID_SIZE * (i + 1) + i))) 
+          * cn;
 
-  /*
-    char own_id[own_num][CONTENT_ID_SIZE];
-  MYSQL_ROW row;
-  while ((row = mysql_fetch_row(thread_db.result))) {
-    strcpy(own_id[i], row[0]);
-    i++;
-  }
-  for (i = 0; i < own_num; i++) {
-    std::cout << own_id[i] << std::endl;
-    std::string own_id_s = own_id[i];
-    query = "select * from c_values where own_content_id=\"" + own_id[i] + "\";";
-    if ((tmp = thread_db.sendQuery((char *)query.c_str())) < 0) {
-      std::cerr << "sendQuery返り値: " << tmp << std::endl;
-      return NULL;
+        char s_buf[buf_size];
+        struct neighbor_node_column *n_n_c_p = (struct neighbor_node_column *)s_buf;
+        int j = 0;
+        for (int c = 0; c < cn; c++) {
+          row = mysql_fetch_row(thread_db[i].result);
+          strcpy(n_n_c_p->own_content_id, row[1]);// start_node
+          strcpy(n_n_c_p->other_content_id, row[9]);// next_node
+          strcpy(n_n_c_p->version_id, row[2]);
+          std::string n_val_str = row[4];
+          double *s_n_v = (double *)((char *)n_n_c_p + sizeof(struct neighbor_node_column));
+          *s_n_v = atof(row[4]);
+          char *s_v_c = (char *)((char *)s_n_v + sizeof(double));
+          memcpy(s_v_c, (char *)row[5], sizeof(char) * VALUE_SIZE * (i + 1));
+          char *s_n_c = (char *)((char *)s_v_c + sizeof(char) * VALUE_SIZE * (i + 1));
+          std::string ownci_s = row[0];
+          std::string node_chain_s = row[6];
+          if (node_chain_s == "NULL") {
+            memcpy(s_n_c, (char *)(ownci_s.c_str()), sizeof(char) * CONTENT_ID_SIZE);
+            n_n_c_p = (struct neighbor_node_column *)((char *)s_n_c + sizeof(char) * CONTENT_ID_SIZE);
+          } else {
+            std::string new_node_chain_s = node_chain_s + "," + ownci_s;
+            memcpy(s_n_c, (char *)(new_node_chain_s.c_str()), sizeof(char) * (CONTENT_ID_SIZE * (i + 1) + i));
+            n_n_c_p = (struct neighbor_node_column *)((char *)s_n_c + sizeof(char) * (CONTENT_ID_SIZE * (i + 1) + i));
+          }
+        }
+        tc->SendMsg((char *)s_buf, buf_size);
+        char *debug_p = (char *)s_buf;
+        /*
+           while ((char *)debug_p < (char *)n_n_c_p) {
+           struct neighbor_node_column *d_n_n_c_p = (struct neighbor_node_column *)debug_p;
+           std::cout << "startid: " << d_n_n_c_p->own_content_id << std::endl;
+           std::cout << "next_id: " << d_n_n_c_p->other_content_id << std::endl;
+           std::cout << "versiid: " << d_n_n_c_p->version_id << std::endl;
+           double *d_s_n_v = (double *)((char *)d_n_n_c_p + sizeof(struct neighbor_node_column));
+           std::cout << "next_va: " << (*d_s_n_v) << std::endl;
+           char *d_s_v_c = (char *)((char *)d_s_n_v + sizeof(double));
+           std::cout << "val_cha: " << d_s_v_c << std::endl;
+           char *d_s_n_c = (char *)((char *)d_s_v_c + sizeof(char) * VALUE_SIZE * (i + 1));
+           std::cout << "nod_cha: " << d_s_n_c << std::endl;
+           debug_p = (char *)((char *)d_s_n_c + sizeof(char) * (CONTENT_ID_SIZE));
+           }
+           */
+        std::cout << "100 end: " << ip << std::endl;
+      }
     }
-    int colum_num = mysql_num_rows(thread_db.result);
-  }
-  // end送信するデータの必要な量を知る
+    /*
+    std::cout << "end: " << ip << std::endl;
+    pthread_mutex_lock(&propagation_thread_mutex);
+    *next_ip_p = *next_ip_p + 1;
+    std::cerr << "next_ip: " << *next_ip_p << std::endl;
+    std::cerr << "max_ipn: " << max_ip_num << std::endl;
+    if (*next_ip_p > max_ip_num) {
+      breakflag = 1;
+    } else {
+    }
+    pthread_mutex_unlock(&propagation_thread_mutex);
 
-  query = "select own_content_id,other_content_id from neighbor_nodes where next_server_ip=\"" + ip_s + "\";";
-  if ((tmp = thread_db.sendQuery((char *)query.c_str())) < 0) {
-    std::cerr << "sendQuery返り値: " << tmp << std::endl;
-    return NULL;
-  }
-  int n_n_c_num = mysql_num_rows(thread_db.result);
-  struct neighbor_node_column n_n_c[n_n_c_num];
-  while ((row = mysql_fetch_row(thread_db.result))) {
-    strcpy(n_n_c[i].own_content_id, row[0]);
-    strcpy(n_n_c[i].other_content_id, row[1]);
-    strcpy(n_n_c[i].version_id, row[2]);
-    i++;
-  }
-  for (i = 0; i < n_n_c_num; i++) {
-    std::cout << n_n_c[i].other_content_id << std::endl;
-    std::string oth_id = n_n_c[i].other_content_id;
-  }
-  return NULL;
+  } while(breakflag != 1);
   */
+  return NULL;
 }
 void *cd_thread(void *arg) {
   std::cout << "in cd_thread" << std::endl;
@@ -527,7 +529,7 @@ void *cd_thread(void *arg) {
 
     if (rmsg_h.code == UPDATE_DISTANCE) {
       std::cout << "rmsg_h.code: " << (int)rmsg_h.code << endl;
-      uda->updateDistanceFromCs();
+      uda->updateCvalueNeighbor();
     } else if (rmsg_h.code == UPDATE_DISTANCE_SECOND) {
       std::cout << "rmsg_h.code: " << (int)rmsg_h.code << endl;
       uda->updateDistanceFromGm();

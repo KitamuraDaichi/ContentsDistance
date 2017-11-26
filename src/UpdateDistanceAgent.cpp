@@ -1,6 +1,7 @@
 #include <condis.h>
 #include <UpdateDistanceAgent.h>
 
+pthread_mutex_t output_time_mutex = PTHREAD_MUTEX_INITIALIZER;
 UpdateDistanceAgent::~UpdateDistanceAgent() {
   delete &db;
   //delete ts;
@@ -13,6 +14,24 @@ UpdateDistanceAgent::UpdateDistanceAgent(struct client_data cdata) {
   ts = new Tcp_Server();
   ts->cdata = cdata;
 }
+void UpdateDistanceAgent::outputTime(int start_end) {
+  char time_buff[] = "";
+  time_t now = time(NULL);
+  struct tm *pnow = localtime(&now);
+  sprintf(time_buff, "%04d%02d%02d%02d%02d%02d", pnow->tm_year + 1900, pnow->tm_mon + 1, pnow->tm_mday, pnow->tm_hour, pnow->tm_min, pnow->tm_sec);
+  std::string recv_time = time_buff;
+  pthread_mutex_lock(&output_time_mutex);
+  ofstream fout("./recv_time.csv", ios::app);
+
+  std::string addr = inet_ntoa(this->ts->cdata.saddr.sin_addr);
+  if (start_end == 0) {
+    fout << "recv_start," << addr << "," << recv_time << std::endl;
+  } else {
+    fout << "recv_end," << addr << "," << recv_time << std::endl;
+  }
+  fout.close();
+  pthread_mutex_unlock(&output_time_mutex);
+}
 int UpdateDistanceAgent::updateCvalueNeighbor() {
   std::cout << "in updateupdateCvalueNeighbor" << std::endl;
   char time_buff[] = "";
@@ -21,6 +40,7 @@ int UpdateDistanceAgent::updateCvalueNeighbor() {
   sprintf(time_buff, "%04d%02d%02d%02d%02d", pnow->tm_year + 1900, pnow->tm_mon + 1, pnow->tm_mday, pnow->tm_hour, pnow->tm_min);
   std::string recv_time_stamp = time_buff;
 
+  this->outputTime(0);
   int column_num[MAX_HOP];
   for (int i = 0; i < MAX_HOP; i++) {
     this->ts->recvMsgAll((char *)(&column_num[i]), sizeof(int));
@@ -50,14 +70,17 @@ int UpdateDistanceAgent::updateCvalueNeighbor() {
       os << now_value;
       next_value_chain = os.str() + "," + next_value_chain;
       if (strcmp(n_n_c.own_content_id, n_n_c.other_content_id) == 0) {
-        next_value = INITIAL_VALUE / this->nodeDegree(n_n_c.other_content_id);
-        this->addNeighborNodes(n_n_c.other_content_id, node_chain, n_n_c.version_id);
-        this->addCValue(n_n_c.other_content_id, node_chain, n_n_c.version_id, hop, next_value, "1000.0", "NULL", recv_time_stamp);
+        if (i == 0) {
+          next_value = INITIAL_VALUE / this->nodeDegree(n_n_c.other_content_id);
+          this->addNeighborNodes(n_n_c.other_content_id, node_chain, n_n_c.version_id);
+          this->addCValue(n_n_c.other_content_id, node_chain, n_n_c.version_id, 0, next_value, "1000.0", "NULL", recv_time_stamp);
+        }
       } else {
         this->addCValue(n_n_c.other_content_id, n_n_c.own_content_id, n_n_c.version_id, hop, next_value, (char *)next_value_chain.c_str(), node_chain, recv_time_stamp);
       }
     }
   }
+  this->outputTime(1);
   std::cout << "終わり" << std::endl;
   std::cerr << "終わり" << std::endl;
   return 0;
@@ -293,6 +316,7 @@ int UpdateDistanceAgent::addNeighborNodes(char *own_content_id, char *other_cont
   int tmp;
   if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
     std::cerr << "in addNeighborNodes" << std::endl;
+    std::cerr << "query: " << query << std::endl;
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
     return -1;
   }
@@ -323,6 +347,7 @@ int UpdateDistanceAgent::addCValue(char *own_content_id, char *other_content_id,
   int tmp;
   if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
     std::cerr << "in addCValue" << std::endl;
+    std::cerr << "query: " << query << std::endl;
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
     return -1;
   }

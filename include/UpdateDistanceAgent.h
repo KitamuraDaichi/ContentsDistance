@@ -34,6 +34,7 @@ class UpdateDistanceAgent {
     int deleteColumnNeighborNode(char *own_content_id, char *other_content_id);
     int deleteColumnCValue(char *own_content_id, char *other_content_id, char *path_chain);
     int nodeDegree(char *content_id);
+    void outputTime(int start_end);
     int updateDistanceFromCs();
     void updateDistanceFromGm();
     int distance(std::string own_id, std::string other_id);

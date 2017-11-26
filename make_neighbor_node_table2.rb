@@ -3,17 +3,17 @@ require "date"
 require "bigdecimal"
 
 # Catalogue Server ID
-$server_number = 1
+$server_number = 0
 # ラウンドロビンでノードをサーバに分ける
 $network_filename = ARGV[0]
-$server_num = 3
+$server_num = 72
 # 作成したいデータベースとテーブルの名前
 $database_name = "cfec_database2"
 $neighbor_node_table_name = "neighbor_nodes"
 $c_value_table_name = "c_values"
 $ip_node_table_name = "ip_nodes"
 $now_time
-$arr_ip = ["10.58.58.2", "10.58.58.3", "10.58.58.4"]
+$arr_ip = ["10.58.58.2", "10.58.58.3", "10.58.58.4", "10.58.58.5", "10.58.58.6", "10.58.58.7", "10.58.58.8", "10.58.58.9", "10.58.58.10", "10.58.58.11", "10.58.58.12", "10.58.58.13", "10.58.58.18", "10.58.58.19", "10.58.58.20", "10.58.58.21", "10.58.58.22", "10.58.58.23", "10.58.58.24", "10.58.58.25", "10.58.58.26", "10.58.58.27", "10.58.58.28", "10.58.58.29", "10.58.58.98", "10.58.58.99", "10.58.58.100", "10.58.58.101", "10.58.58.102", "10.58.58.103", "10.58.58.104", "10.58.58.105", "10.58.58.106", "10.58.58.107", "10.58.58.108", "10.58.58.109", "10.58.58.34", "10.58.58.35", "10.58.58.36", "10.58.58.37", "10.58.58.38", "10.58.58.39", "10.58.58.40", "10.58.58.41", "10.58.58.42", "10.58.58.43", "10.58.58.44", "10.58.58.45", "10.58.58.82", "10.58.58.83", "10.58.58.84", "10.58.58.85", "10.58.58.86", "10.58.58.87", "10.58.58.88", "10.58.58.89", "10.58.58.90", "10.58.58.91", "10.58.58.92", "10.58.58.93", "10.58.58.114", "10.58.58.115", "10.58.58.116", "10.58.58.117", "10.58.58.118", "10.58.58.119", "10.58.58.120", "10.58.58.121", "10.58.58.122", "10.58.58.123", "10.58.58.124", "10.58.58.125"]
 $hash_node = {}
 class Node
   @id
@@ -117,7 +117,7 @@ def load_nodeid_round_robin()
     puts id_node_pair[0]
     if (i % $server_num) == $server_number.to_i then
       id_node_pair[1].arr_neighbor_node.each {|other_node_id|
-        insert_neighbor_node_table(id_node_pair[0], other_node_id, $arr_ip[$hash_node[other_node_id].server_id()], $hash_node[other_node_id].server_id())
+        #insert_neighbor_node_table(id_node_pair[0], other_node_id, $arr_ip[$hash_node[other_node_id].server_id()], $hash_node[other_node_id].server_id())
         insert_c_value_table(id_node_pair[0], other_node_id, $hash_node[other_node_id].server_id())
       }
     end
@@ -153,7 +153,7 @@ end
 start()
 #delete_column_from_neighbor_node_table()
 #make_database()
-make_tables()
+#make_tables()
 load_node()
 load_nodeid_round_robin()
 #p $hash_node[0]

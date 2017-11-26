@@ -15,16 +15,23 @@
 //#include <cppconn/Statement.h>
 //#include <cppconn/ResultSet.h>
 
-void start_point_start() {
-  UpdateDistance *ud;
-  ud = new UpdateDistance();
-  ud->setupUpdate2();
+void *start_point_start(void *arg) {
+  int init_sleep_time = INIT_SLEEP_TIME;
+  int sleep_time = SLEEP_TIME;
+  sleep(init_sleep_time);
+  while(1) {
+    UpdateDistance *ud;
+    ud = new UpdateDistance();
+    ud->setupUpdate2();
+    sleep(sleep_time);
+  }
 }
 
 
 int main() {
-  //start_point_start();
-  //return 0;
+  pthread_t send_thread;
+
+  pthread_create(&send_thread, NULL, start_point_start, NULL);
 
   //ここから前のやつ
   UpdateDistance *ud;
@@ -32,6 +39,8 @@ int main() {
 
   ud = new UpdateDistance();
   ud->start(server_port);
+
+  pthread_join(send_thread, NULL);
 
   /*
   std::string own_id = "aaaa";

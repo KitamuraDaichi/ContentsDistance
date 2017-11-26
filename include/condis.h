@@ -8,8 +8,13 @@
 #include <vector>
 #include <TcpServer.h>
 #include <TcpClient.h>
+#include <pthread.h>
+#include <unistd.h>
 #include <map>
 
+#define LOCAL_SERVER_IP "10.58.58.2"
+#define INIT_SLEEP_TIME 3 
+#define SLEEP_TIME      86400 
 #define UPDATE_DISTANCE_FROM_CS 16
 #define UPDATE_DISTANCE_SECOND 17
 #define UPDATE_DISTANCE 18
@@ -20,6 +25,7 @@
 #define MAX_HOP 3
 #define VALUE_SIZE 10
 #define MAX_COLUMN_NUM 100
+#define PROPAGATION_THREAD_NUM 4
 
 void *cd_thread(void *arg);
 
@@ -112,3 +118,9 @@ struct message_second {
   int hop;
   double cfec_part_value;
 }; 
+
+struct send_each_ip_arg {
+  char *ip;
+  int max_ip_num;
+  int *next_ip_num; 
+};
