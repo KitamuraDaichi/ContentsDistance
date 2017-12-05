@@ -2,10 +2,12 @@
 #include <UpdateDistanceAgent.h>
 #include <OnMemoryDatabase.h>
 #include <boost/thread.hpp>
-
+#define MAX_RECV_THREAD_NUM 8
 using namespace boost;
 boost::shared_mutex mutex;
 extern shared_mutex mysql_mutex;
+pthread_mutex_t recv_thread_num_mutex = PTHREAD_MUTEX_INITIALIZER;
+int recv_thread_num = 0;
 
 pthread_mutex_t output_time_mutex = PTHREAD_MUTEX_INITIALIZER;
 UpdateDistanceAgent::~UpdateDistanceAgent() {
@@ -40,6 +42,19 @@ void UpdateDistanceAgent::outputTime(int start_end) {
 }
 int UpdateDistanceAgent::updateCvalueNeighborOnMemory() {
   std::cout << "in updateupdateCvalueNeighborOnMemory" << std::endl;
+  pthread_mutex_lock(&recv_thread_num_mutex);
+  if (recv_thread_num >= MAX_RECV_THREAD_NUM) {
+    int s_msg = -1;
+    std::cout << "recvが多すぎます" << std::endl;
+    this->ts->sendMsg((char *)&s_msg, sizeof(int));
+    return 1;
+  } else {
+    int s_msg = 1;
+    std::cout << "recvがすくないので受け付けます" << std::endl;
+    recv_thread_num++;
+    this->ts->sendMsg((char *)&s_msg, sizeof(int));
+  }
+  pthread_mutex_unlock(&recv_thread_num_mutex);
   char time_buff[] = "";
   time_t now = time(NULL);
   struct tm *pnow = localtime(&now);
@@ -58,8 +73,8 @@ int UpdateDistanceAgent::updateCvalueNeighborOnMemory() {
     std::cout << "count: " << i << std::endl;
   }
   // Mysqlに書き込み
-  //upgrade_lock<shared_mutex> up_lock(mysql_mutex);
-  //upgrade_to_unique_lock<shared_mutex> write_lock(up_lock);
+  upgrade_lock<shared_mutex> up_lock(mysql_mutex);
+  upgrade_to_unique_lock<shared_mutex> write_lock(up_lock);
   std::vector<struct c_values>::iterator v_itr;
   std::vector<struct c_values>::iterator v_itrEnd = recv_c_values_vector.end();
   for (v_itr = recv_c_values_vector.begin(); v_itr != v_itrEnd; ++v_itr) {
@@ -77,7 +92,8 @@ int UpdateDistanceAgent::updateCvalueNeighborOnMemory() {
     std::cout << "get_time  :     " << (*v_itr).get_time << std::endl;
   }
   // debug
-  return 1;
+  //return 1;
+  recv_thread_num--;
   for (v_itr = recv_c_values_vector.begin(); v_itr != v_itrEnd; ++v_itr) {
     this->updateMysqlFromMemory(*v_itr, recv_time_stamp);
   }
@@ -88,10 +104,12 @@ int UpdateDistanceAgent::updateMysqlFromMemory(struct c_values recv_column, std:
   if (strcmp(recv_column.own_content_id, recv_column.other_content_id) == 0) {
     if (recv_column.hop == 1) {
       this->addNeighborNodeFromMemory(recv_column);
-      this->addCValueFromMemory(recv_column, recv_time_stamp);
+      int same_flag = 1;
+      this->addCValueFromMemory(recv_column, recv_time_stamp, same_flag);
     }
   } else {
-      this->addCValueFromMemory(recv_column, recv_time_stamp);
+      int same_flag = 0;
+      this->addCValueFromMemory(recv_column, recv_time_stamp, same_flag);
   }
   return 1;
 }
@@ -99,14 +117,15 @@ int UpdateDistanceAgent::addNeighborNodeFromMemory(struct c_values new_column) {
   std::string owncid = new_column.own_content_id;
   std::string othcid = new_column.other_content_id;
   std::string versid = new_column.version_id;
-  std::string id_first = othcid.substr(0, 8);
+  std::string nodcha = new_column.node_chain[0];
+  std::string id_first = nodcha.substr(0, 8);
   std::string next_server_ip;
   rc->getParam(id_first, &next_server_ip);
   if (existSameNeighborNode(new_column.own_content_id, new_column.other_content_id) == 1) {
     deleteColumnNeighborNode(new_column.own_content_id, new_column.other_content_id);
   }
   std::string query = "insert into neighbor_nodes (own_content_id, other_content_id, version_id, next_server_ip) values(\""
-      + owncid + "\", \"" + othcid + "\", \"" + versid + "\", \"" + next_server_ip + "\");";
+      + owncid + "\", \"" + nodcha + "\", \"" + versid + "\", \"" + next_server_ip + "\");";
   int tmp;
   if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
     std::cerr << "in addNeighborNodes" << std::endl;
@@ -120,7 +139,7 @@ int UpdateDistanceAgent::addNeighborNodeFromMemory(struct c_values new_column) {
   }
   return 0;
 }
-int UpdateDistanceAgent::addCValueFromMemory(struct c_values new_column, std::string recv_time_stamp) {
+int UpdateDistanceAgent::addCValueFromMemory(struct c_values new_column, std::string recv_time_stamp, int same_flag) {
   std::string owncid = new_column.own_content_id;
   std::string othcid = new_column.other_content_id;
   std::string versid = new_column.version_id;
@@ -155,14 +174,20 @@ int UpdateDistanceAgent::addCValueFromMemory(struct c_values new_column, std::st
   ostringstream os;
   os << new_column.hop;
   std::string hop_s = os.str();
-  ostringstream os2;
-  os2 << next_value;
-  std::string next_value_s = os2.str();
   ostringstream os3;
   os3 << new_column.next_value;
   std::string now_value = os3.str();
   valcha = now_value + "," + valcha;
 
+  if (same_flag == 1) {
+    nodcha = "NULL";
+    othcid = new_column.node_chain[0];
+    valcha = "1000.0";
+    next_value = 1000.0 / this->nodeDegree(new_column.own_content_id);
+  }
+  ostringstream os2;
+  os2 << next_value;
+  std::string next_value_s = os2.str();
   std::string query = "insert into c_values (own_content_id, other_content_id, version_id, hop, next_value, value_chain, path_chain, recv_time_stamp) values(\"" + owncid + "\", \"" + othcid + "\", \"" + versid + "\", " + hop_s + ", " + next_value_s + ", \""  + valcha + "\", \"" + nodcha + "\", \"" + recv_time_stamp + "\");";
   int tmp;
   if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {

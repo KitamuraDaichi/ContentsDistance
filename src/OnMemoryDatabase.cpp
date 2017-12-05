@@ -70,20 +70,21 @@ int OnMemoryDatabase::loadCValuesForSendByIp() {
       }
       // node_chain
       if (strcmp(row[6], "NULL") == 0) {
-        for (int j = 0; j < MAX_HOP - 1; j++) {
+        strcpy(tmp_c_values.node_chain[0], row[0]); // 自分のコンテンツを末尾に入れておく
+        for (int j = 1; j < MAX_HOP - 1; j++) {
           strcpy(tmp_c_values.node_chain[j],"NULL");
         }
       } else {
         char *tok_node;
-        tok_node = strtok(row[6], ",");
         i = 0;
+        strcpy(tmp_c_values.node_chain[i], row[0]); // 自分のコンテンツを末尾に入れておく
+        i++;
+        tok_node = strtok(row[6], ",");
         while (tok_node != NULL) {
           strcpy(tmp_c_values.node_chain[i], tok_node);
           tok_node = strtok(NULL, ",");
           i++;
         }
-        strcpy(tmp_c_values.node_chain[i], row[0]); // 自分のコンテンツを末尾に入れておく
-        i++;
         for (int j = i; j < MAX_HOP - 1; j++) {
           strcpy(tmp_c_values.node_chain[j], "NULL");
         }

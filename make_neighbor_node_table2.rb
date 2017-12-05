@@ -37,7 +37,9 @@ class Node
     return @arr_neighbor_node
   end
   def oneHopPush(other_id)
-    @arr_neighbor_node.push(other_id)
+    if !(@arr_neighbor_node.include?(other_id)) then
+      @arr_neighbor_node.push(other_id)
+    end
   end
   def degree()
     return @arr_neighbor_node.length
@@ -100,7 +102,7 @@ def insert_c_value_table(own_node, other_node, other_node_server_id)
   own_node_id = conv_fileid_to_catid(own_node, $server_number)
   other_node_id = conv_fileid_to_catid(other_node, other_node_server_id)
   time_str = "#{$now_time.year}#{$now_time.month}#{($now_time.day.to_s).rjust(2, "0")}#{$now_time.hour}#{$now_time.min}"
-  version_id = ($server_num.to_s(16)).rjust(8, "0") + time_str
+  version_id = ($server_number.to_s(16)).rjust(8, "0") + time_str
   next_value = 1000.0 / ($hash_node[own_node].degree())
   command = "mysql -uroot -e 'insert into #{$database_name}.#{$c_value_table_name} (own_content_id, other_content_id, version_id, hop, next_value, value_chain, path_chain, recv_time_stamp) values (\"#{own_node_id}\", \"#{other_node_id}\", \"#{version_id}\", 0, #{next_value}, \"1000\", \"NULL\", \"#{time_str}\")'" 
   if !system(command) then

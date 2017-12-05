@@ -423,6 +423,8 @@ void *send_each_ip_on_memory(void *arg) {
   int max_ip_num = (int)(((struct send_each_ip_on_memory_arg *)arg)->max_ip_num);
   std::map<std::string, vector<struct c_values> >::iterator *next_ip_itr = (std::map<std::string, vector<struct c_values> >::iterator *)(((struct send_each_ip_on_memory_arg *)arg)->next_ip_itr);
   int breakflag = 0;
+  vector<std::string> skip_ip_vector;
+  vector<std::string>::iterator skip_ip_vector_p = skip_ip_vector.begin();
 
   std::cout << "ip: " << ip_s << std::endl;
   std::cout << "max_ip_num: " << max_ip_num << std::endl;
@@ -442,11 +444,33 @@ void *send_each_ip_on_memory(void *arg) {
     std::cout << "send column_num: " << *column_num << std::endl;
     TcpClient *tc;
     tc = new TcpClient();
-    //if (tc->InitClientSocket(ip_s.c_str(), "5566") == -1) {
-    if (tc->InitClientSocket("10.58.58.2", "5566") == -1) {
+    if (tc->InitClientSocket(ip_s.c_str(), "5566") == -1) {
+    //if (tc->InitClientSocket("10.58.58.2", "5566") == -1) {
       std::cout << "send error" << std::endl;
     }
     tc->SendMsg((char *)s_head_buf, sizeof(struct message_header) + sizeof(int));
+    // recv側の接続数を限定する
+    char r_buf[sizeof(int)];
+    tc->RecvMsgAll((char *)r_buf, sizeof(int));
+    std::cout << "r_buf: " << (int)*r_buf << std::endl;
+    if ((int)*r_buf == -1) {
+      skip_ip_vector.push_back(ip_s);
+      pthread_mutex_lock(&propagation_thread_mutex);
+      if (*next_ip_itr == omd->c_values_for_send_by_ip.end()) {
+        breakflag = 1;
+        if (skip_ip_vector_p == skip_ip_vector.end()) {
+          breakflag = 1;
+        } else {
+          ip_s = *skip_ip_vector_p;
+        }
+      } else {
+        ip_s = (*next_ip_itr)->first;
+        (*next_ip_itr)++;
+      }
+      pthread_mutex_unlock(&propagation_thread_mutex);
+      std::cout << "next_ip: " << ip_s << std::endl;
+      continue;
+    }
     int sent_column_num = 0;
     while(sent_column_num < *column_num) {
       int send_column_num;
@@ -488,11 +512,15 @@ void *send_each_ip_on_memory(void *arg) {
 
     pthread_mutex_lock(&propagation_thread_mutex);
     if (*next_ip_itr == omd->c_values_for_send_by_ip.end()) {
-      breakflag = 1;
+      if (skip_ip_vector_p == skip_ip_vector.end()) {
+        breakflag = 1;
+      } else {
+        ip_s = *skip_ip_vector_p;
+      }
     } else {
       ip_s = (*next_ip_itr)->first;
+      (*next_ip_itr)++;
     }
-    (*next_ip_itr)++;
     pthread_mutex_unlock(&propagation_thread_mutex);
     std::cout << "next_ip: " << ip_s << std::endl;
   }
