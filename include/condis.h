@@ -15,8 +15,11 @@
 #include <map>
 
 #define LOCAL_SERVER_IP "10.58.58.2"
-#define INIT_SLEEP_TIME 0
-#define SLEEP_TIME      86400 
+#define SERVER_NUMBER 0
+#define SERVER_NUM 64
+//#define SLEEP_TIME      86400 
+#define SLEEP_TIME      (60 * 60) 
+#define INIT_SLEEP_TIME (10 + ((SLEEP_TIME / SERVER_NUM) * SERVER_NUMBER))
 #define UPDATE_DISTANCE_FROM_CS 16
 #define UPDATE_DISTANCE_SECOND 17
 #define UPDATE_DISTANCE 18
