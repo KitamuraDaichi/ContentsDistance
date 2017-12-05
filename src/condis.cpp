@@ -13,6 +13,7 @@
 using namespace boost;
 extern OnMemoryDatabase *omd;
 extern shared_mutex c_values_mutex;
+extern shared_mutex vectors_mutex;
 
 pthread_mutex_t propagation_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 MysqlAccess::MysqlAccess() {
@@ -104,6 +105,8 @@ int UpdateDistance::setupUpdate3() {
   fout << send_time << std::endl;
   fout.close();
   // 送信先のipのvectorでループを回す
+  shared_lock <shared_mutex> read_lock(vectors_mutex);
+
   int max_ip_num = omd->next_ip_table.size();
   int start_thread_num = PROPAGATION_THREAD_NUM;
   int thread_num = 0;
@@ -431,9 +434,11 @@ void *send_each_ip_on_memory(void *arg) {
   std::cout << "vector: " << (*next_ip_itr)->first << std::endl;
   while(breakflag != 1) {
     // デバッグ
+    /*
     if (ip_s != "10.58.58.11") {
       return NULL;
     }
+    */
     //ip_s = "10.58.58.2";
     //
     char s_head_buf[sizeof(struct message_header) + sizeof(int)];

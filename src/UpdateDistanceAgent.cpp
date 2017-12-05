@@ -6,6 +6,7 @@
 using namespace boost;
 boost::shared_mutex mutex;
 extern shared_mutex mysql_mutex;
+extern OnMemoryDatabase *omd;
 pthread_mutex_t recv_thread_num_mutex = PTHREAD_MUTEX_INITIALIZER;
 int recv_thread_num = 0;
 
@@ -73,8 +74,6 @@ int UpdateDistanceAgent::updateCvalueNeighborOnMemory() {
     std::cout << "count: " << i << std::endl;
   }
   // Mysqlに書き込み
-  upgrade_lock<shared_mutex> up_lock(mysql_mutex);
-  upgrade_to_unique_lock<shared_mutex> write_lock(up_lock);
   std::vector<struct c_values>::iterator v_itr;
   std::vector<struct c_values>::iterator v_itrEnd = recv_c_values_vector.end();
   for (v_itr = recv_c_values_vector.begin(); v_itr != v_itrEnd; ++v_itr) {
@@ -93,10 +92,15 @@ int UpdateDistanceAgent::updateCvalueNeighborOnMemory() {
   }
   // debug
   //return 1;
+  pthread_mutex_lock(&recv_thread_num_mutex);
   recv_thread_num--;
+  pthread_mutex_unlock(&recv_thread_num_mutex);
+  upgrade_lock<shared_mutex> up_lock(mysql_mutex);
+  upgrade_to_unique_lock<shared_mutex> write_lock(up_lock);
   for (v_itr = recv_c_values_vector.begin(); v_itr != v_itrEnd; ++v_itr) {
     this->updateMysqlFromMemory(*v_itr, recv_time_stamp);
   }
+  omd->loadMysql();
 
   return 1;
 }

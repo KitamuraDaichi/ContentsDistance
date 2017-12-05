@@ -4,6 +4,7 @@ shared_mutex neighbor_nodes_mutex;
 shared_mutex ip_mutex;
 shared_mutex c_values_mutex;
 shared_mutex mysql_mutex;
+shared_mutex vectors_mutex;
 
 OnMemoryDatabase::~OnMemoryDatabase() {
 }
@@ -14,6 +15,9 @@ OnMemoryDatabase::OnMemoryDatabase() {
   this->loadMysql();
 }
 int OnMemoryDatabase::loadMysql() {
+  shared_lock <shared_mutex> read_lock(mysql_mutex);
+  upgrade_lock<shared_mutex> up_lock(vectors_mutex);
+  upgrade_to_unique_lock<shared_mutex> write_lock(up_lock);
   if (this->loadIp() < -1) {
     std::cout << "loadIp Error" << std::endl;
   }

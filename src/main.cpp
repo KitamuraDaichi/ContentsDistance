@@ -16,17 +16,22 @@
 //#include <cppconn/Statement.h>
 //#include <cppconn/ResultSet.h>
 OnMemoryDatabase *omd;
+void *send_thread(void *arg) {
+  UpdateDistance *ud;
+  ud = new UpdateDistance();
+  ud->setupUpdate3();
+}
 
 void *start_point_start(void *arg) {
   int init_sleep_time = INIT_SLEEP_TIME;
   int sleep_time = SLEEP_TIME;
-  sleep(2);
-//  while(1) {
-    UpdateDistance *ud;
-    ud = new UpdateDistance();
-    ud->setupUpdate3();
-  //  sleep(sleep_time);
-//  }
+  sleep(init_sleep_time);
+  while(1) {
+    pthread_t send_th;
+    pthread_create(&send_th, NULL, send_thread, NULL);
+    sleep(sleep_time);
+    pthread_join(send_th, NULL);
+  }
 }
 
 
