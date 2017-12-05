@@ -1,5 +1,6 @@
 #include <condis.h>
 #include <UpdateDistanceAgent.h>
+#include <OnMemoryDatabase.h>
 //#include <TcpServer.h>
 //#include <stdio.h>
 //#include <stdlib.h>
@@ -9,6 +10,9 @@
 //#include <sstream>
 //#include <mysql/mysql.h>
 //#include <vector>
+using namespace boost;
+extern OnMemoryDatabase *omd;
+extern shared_mutex c_values_mutex;
 
 pthread_mutex_t propagation_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 MysqlAccess::MysqlAccess() {
@@ -88,6 +92,49 @@ UpdateDistance::UpdateDistance() {
     fprintf(stderr, "Databaseにconnectできませんでした。\n");
   }
 }
+int UpdateDistance::setupUpdate3() {
+  std::cout << "in setupUpdate3" << std::endl;
+  // 送信開始の時間を出力
+  char time_buff[] = "";
+  time_t now = time(NULL);
+  struct tm *pnow = localtime(&now);
+  sprintf(time_buff, "%04d%02d%02d%02d%02d%02d", pnow->tm_year + 1900, pnow->tm_mon + 1, pnow->tm_mday, pnow->tm_hour, pnow->tm_min, pnow->tm_sec);
+  std::string send_time = time_buff;
+  ofstream fout("./send_start_time.csv", ios::app);
+  fout << send_time << std::endl;
+  fout.close();
+  // 送信先のipのvectorでループを回す
+  int max_ip_num = omd->next_ip_table.size();
+  int start_thread_num = PROPAGATION_THREAD_NUM;
+  int thread_num = 0;
+  if (max_ip_num < PROPAGATION_THREAD_NUM) {
+    thread_num = max_ip_num;
+  } else {
+    thread_num = PROPAGATION_THREAD_NUM;
+  }
+  std::string arr_ip[thread_num];
+  pthread_t thread_id[thread_num];
+  struct send_each_ip_on_memory_arg thread_arg[thread_num];
+ 
+  std::map<std::string, vector<struct c_values> >::iterator itr = omd->c_values_for_send_by_ip.begin();
+  std::map<std::string, vector<struct c_values> >::iterator itrEnd;
+
+  for (int i = 0; i < thread_num; i++) {
+    arr_ip[i] = itr->first;
+    itr++;
+  }
+  for (int i = 0; i < thread_num; i++) {
+    thread_arg[i].ip = arr_ip[i];
+    thread_arg[i].max_ip_num = max_ip_num;
+    thread_arg[i].next_ip_itr = &itr;
+    pthread_create(&thread_id[i], NULL, send_each_ip_on_memory, (void *)&thread_arg[i]); 
+  }
+  for (int i = 0; i < thread_num; i++) {
+    pthread_join(thread_id[i], NULL);
+  }
+  std::cerr << "終わりん" << std::endl;
+  return 0;
+}
 int UpdateDistance::setupUpdate2() {
   std::cout << "in setupUpdate2" << std::endl;
   char time_buff[] = "";
@@ -102,8 +149,8 @@ int UpdateDistance::setupUpdate2() {
   std::string local_server_ip = LOCAL_SERVER_IP;
   // mysqlから隣接ノードテーブルを読み出し
   //query = "select distinct next_server_ip from neighbor_nodes where next_server_ip != \"" + local_server_ip + "\";";
-  query = "select distinct next_server_ip from neighbor_nodes where next_server_ip = \"10.58.58.2\"";
-  //query = "select distinct next_server_ip from neighbor_nodes";
+  //query = "select distinct next_server_ip from neighbor_nodes where next_server_ip = \"10.58.58.2\"";
+  query = "select distinct next_server_ip from neighbor_nodes";
   int tmp;
   if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
@@ -134,11 +181,13 @@ int UpdateDistance::setupUpdate2() {
     thread_arg[i].ip = (char *)ip[i];
     thread_arg[i].max_ip_num = max_ip_num;
     thread_arg[i].next_ip_num = &start_thread_num;
+    thread_arg[i].ip_p = (char *)ip;
     pthread_create(&thread_id[i], NULL, send_each_ip, (void *)&thread_arg[i]); 
   }
-  for (i = 0; i < ip_num; i++) {
+  for (i = 0; i < thread_num; i++) {
     pthread_join(thread_id[i], NULL);
   }
+  std::cerr << "終わりん" << std::endl;
   return 0;
 }
 int UpdateDistance::setupUpdate() {
@@ -369,16 +418,104 @@ int UpdateDistance::distance(std::string own_id, std::string other_id) {
 
   return 0;
 }
+void *send_each_ip_on_memory(void *arg) {
+  std::string ip_s = (std::string)(((struct send_each_ip_on_memory_arg *)arg)->ip);
+  int max_ip_num = (int)(((struct send_each_ip_on_memory_arg *)arg)->max_ip_num);
+  std::map<std::string, vector<struct c_values> >::iterator *next_ip_itr = (std::map<std::string, vector<struct c_values> >::iterator *)(((struct send_each_ip_on_memory_arg *)arg)->next_ip_itr);
+  int breakflag = 0;
+
+  std::cout << "ip: " << ip_s << std::endl;
+  std::cout << "max_ip_num: " << max_ip_num << std::endl;
+  std::cout << "vector: " << (*next_ip_itr)->first << std::endl;
+  while(breakflag != 1) {
+    // デバッグ
+    if (ip_s != "10.58.58.11") {
+      return NULL;
+    }
+    //ip_s = "10.58.58.2";
+    //
+    char s_head_buf[sizeof(struct message_header) + sizeof(int)];
+    struct message_header *s_header = (struct message_header *)s_head_buf;
+    setupMsgHeader(s_header, UPDATE_DISTANCE, 0, 0);
+    int *column_num = (int *)((char *)s_header + sizeof(struct message_header));
+    *column_num = omd->c_values_for_send_by_ip[ip_s].size();
+    std::cout << "send column_num: " << *column_num << std::endl;
+    TcpClient *tc;
+    tc = new TcpClient();
+    //if (tc->InitClientSocket(ip_s.c_str(), "5566") == -1) {
+    if (tc->InitClientSocket("10.58.58.2", "5566") == -1) {
+      std::cout << "send error" << std::endl;
+    }
+    tc->SendMsg((char *)s_head_buf, sizeof(struct message_header) + sizeof(int));
+    int sent_column_num = 0;
+    while(sent_column_num < *column_num) {
+      int send_column_num;
+      
+      if ((*column_num - sent_column_num) < MAX_COLUMN_NUM) {
+        send_column_num = *column_num - sent_column_num;
+      } else {
+        send_column_num = MAX_COLUMN_NUM;
+      }
+      int buf_size = sizeof(struct c_values) * (send_column_num);
+      char s_buf[buf_size];
+      std::cout << "debug: " << *column_num << std::endl;
+      omd->copyBufferCValuesForSendByIp((char *)s_buf, ip_s, sent_column_num, send_column_num);
+      std::cout << "debug: " << send_column_num << std::endl;
+      // buffにちゃんと入っているかテスト
+      /*
+      char *debug_s_buf_p = s_buf;
+      for (int i = 0; i < send_column_num; i++) {
+        struct c_values test_c;
+        memcpy(&test_c, (char *)debug_s_buf_p, sizeof(struct c_values));
+        std::cout << "own_content_id: " << (test_c).own_content_id << std::endl;
+        std::cout << "oth_content_id: " << (test_c).other_content_id << std::endl;
+        std::cout << "version_id:     " << (test_c).version_id << std::endl;
+        std::cout << "hop       :     " << (test_c).hop << std::endl;
+        std::cout << "next_value:     " << (test_c).next_value << std::endl;
+        for (int i = 0; i < MAX_HOP; i++) {
+          std::cout << "value_chain:    " << (test_c).value_chain[i] << std::endl;
+        }
+        for (int i = 0; i < MAX_HOP - 1; i++) {
+          std::cout << "node_value:     " << (test_c).node_chain[i] << std::endl;
+        }
+        std::cout << "get_time  :     " << (test_c).get_time << std::endl;
+        debug_s_buf_p = debug_s_buf_p + sizeof(struct c_values);
+      }
+      */
+      tc->SendMsg((char *)s_buf, buf_size);
+      sent_column_num += MAX_COLUMN_NUM;
+    }
+
+    pthread_mutex_lock(&propagation_thread_mutex);
+    if (*next_ip_itr == omd->c_values_for_send_by_ip.end()) {
+      breakflag = 1;
+    } else {
+      ip_s = (*next_ip_itr)->first;
+    }
+    (*next_ip_itr)++;
+    pthread_mutex_unlock(&propagation_thread_mutex);
+    std::cout << "next_ip: " << ip_s << std::endl;
+  }
+
+  return NULL;
+}
 void *send_each_ip(void *arg) {
   char *ip;
   ip = (char *)(((struct send_each_ip_arg *)arg)->ip);
   int max_ip_num = (int)(((struct send_each_ip_arg *)arg)->max_ip_num);
   int *next_ip_p = (int *)(((struct send_each_ip_arg *)arg)->next_ip_num);
+  char ip_p[max_ip_num][IP_SIZE];
+  memcpy((char *)ip_p, (char *)(((struct send_each_ip_arg *)arg)->ip_p), sizeof(char) * max_ip_num * IP_SIZE);
+  /*
+  for (int i = 0; i < max_ip_num; i++) {
+      std::cout << "test ip: " << ip_p[i]<< std::endl;
+  }
+  */
   std::string ip_s = ip;
   fflush(stdout);
 
   int breakflag = 0;
-  //do {
+  while(breakflag != 1) {
     // 送信するデータの必要な量を知る
     MysqlAccess thread_db[MAX_HOP]; 
     int column_num[MAX_HOP];
@@ -411,7 +548,7 @@ void *send_each_ip(void *arg) {
     // headerだけ先に送る
     TcpClient *tc;
     tc = new TcpClient();
-    if (tc->InitClientSocket(ip, "5566") == -1) {
+    if (tc->InitClientSocket(ip_s.c_str(), "5566") == -1) {
       std::cout << "send error" << std::endl;
     }
     char s_head_buf[sizeof(struct message_header) + sizeof(int) * MAX_HOP];
@@ -482,23 +619,23 @@ void *send_each_ip(void *arg) {
            debug_p = (char *)((char *)d_s_n_c + sizeof(char) * (CONTENT_ID_SIZE));
            }
            */
-        std::cout << "100 end: " << ip << std::endl;
+        std::cout << "100 end: " << ip_s << std::endl;
       }
     }
-    /*
-    std::cout << "end: " << ip << std::endl;
+    std::cout << "end: " << ip_s << std::endl;
     pthread_mutex_lock(&propagation_thread_mutex);
     *next_ip_p = *next_ip_p + 1;
-    std::cerr << "next_ip: " << *next_ip_p << std::endl;
+    std::cerr << "next_ip_p: " << *next_ip_p << std::endl;
     std::cerr << "max_ipn: " << max_ip_num << std::endl;
     if (*next_ip_p > max_ip_num) {
       breakflag = 1;
     } else {
+      ip_s = ip_p[*next_ip_p];
     }
+    std::cout << "next_ip: " << ip_s << std::endl;
     pthread_mutex_unlock(&propagation_thread_mutex);
 
-  } while(breakflag != 1);
-  */
+  } 
   return NULL;
 }
 void *cd_thread(void *arg) {
@@ -529,7 +666,7 @@ void *cd_thread(void *arg) {
 
     if (rmsg_h.code == UPDATE_DISTANCE) {
       std::cout << "rmsg_h.code: " << (int)rmsg_h.code << endl;
-      uda->updateCvalueNeighbor();
+      uda->updateCvalueNeighborOnMemory();
     } else if (rmsg_h.code == UPDATE_DISTANCE_SECOND) {
       std::cout << "rmsg_h.code: " << (int)rmsg_h.code << endl;
       uda->updateDistanceFromGm();

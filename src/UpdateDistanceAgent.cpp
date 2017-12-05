@@ -1,5 +1,11 @@
 #include <condis.h>
 #include <UpdateDistanceAgent.h>
+#include <OnMemoryDatabase.h>
+#include <boost/thread.hpp>
+
+using namespace boost;
+boost::shared_mutex mutex;
+extern shared_mutex mysql_mutex;
 
 pthread_mutex_t output_time_mutex = PTHREAD_MUTEX_INITIALIZER;
 UpdateDistanceAgent::~UpdateDistanceAgent() {
@@ -32,6 +38,177 @@ void UpdateDistanceAgent::outputTime(int start_end) {
   fout.close();
   pthread_mutex_unlock(&output_time_mutex);
 }
+int UpdateDistanceAgent::updateCvalueNeighborOnMemory() {
+  std::cout << "in updateupdateCvalueNeighborOnMemory" << std::endl;
+  char time_buff[] = "";
+  time_t now = time(NULL);
+  struct tm *pnow = localtime(&now);
+  sprintf(time_buff, "%04d%02d%02d%02d%02d", pnow->tm_year + 1900, pnow->tm_mon + 1, pnow->tm_mday, pnow->tm_hour, pnow->tm_min);
+  std::string recv_time_stamp = time_buff;
+  this->outputTime(0);
+  int column_num;
+  std::cout << "debug 1" << std::endl;
+  this->ts->recvMsgAll((char *)&column_num, sizeof(int));
+  std::cout << "column_num: " << column_num << std::endl;
+  std::vector<struct c_values> recv_c_values_vector;
+  for (int i = 0; i < column_num; i++) {
+    struct c_values recv_c_values;
+    this->ts->recvMsgAll((char *)&recv_c_values, sizeof(struct c_values));
+    recv_c_values_vector.push_back(recv_c_values);
+    std::cout << "count: " << i << std::endl;
+  }
+  // Mysqlに書き込み
+  //upgrade_lock<shared_mutex> up_lock(mysql_mutex);
+  //upgrade_to_unique_lock<shared_mutex> write_lock(up_lock);
+  std::vector<struct c_values>::iterator v_itr;
+  std::vector<struct c_values>::iterator v_itrEnd = recv_c_values_vector.end();
+  for (v_itr = recv_c_values_vector.begin(); v_itr != v_itrEnd; ++v_itr) {
+    std::cout << "own_content_id: " << (*v_itr).own_content_id << std::endl;
+    std::cout << "oth_content_id: " << (*v_itr).other_content_id << std::endl;
+    std::cout << "version_id:     " << (*v_itr).version_id << std::endl;
+    std::cout << "hop       :     " << (*v_itr).hop << std::endl;
+    std::cout << "next_value:     " << (*v_itr).next_value << std::endl;
+    for (int i = 0; i < MAX_HOP; i++) {
+      std::cout << "value_chain:    " << (*v_itr).value_chain[i] << std::endl;
+    }
+    for (int i = 0; i < MAX_HOP - 1; i++) {
+      std::cout << "node_value:     " << (*v_itr).node_chain[i] << std::endl;
+    }
+    std::cout << "get_time  :     " << (*v_itr).get_time << std::endl;
+  }
+  // debug
+  return 1;
+  for (v_itr = recv_c_values_vector.begin(); v_itr != v_itrEnd; ++v_itr) {
+    this->updateMysqlFromMemory(*v_itr, recv_time_stamp);
+  }
+
+  return 1;
+}
+int UpdateDistanceAgent::updateMysqlFromMemory(struct c_values recv_column, std::string recv_time_stamp) {
+  if (strcmp(recv_column.own_content_id, recv_column.other_content_id) == 0) {
+    if (recv_column.hop == 1) {
+      this->addNeighborNodeFromMemory(recv_column);
+      this->addCValueFromMemory(recv_column, recv_time_stamp);
+    }
+  } else {
+      this->addCValueFromMemory(recv_column, recv_time_stamp);
+  }
+  return 1;
+}
+int UpdateDistanceAgent::addNeighborNodeFromMemory(struct c_values new_column) {
+  std::string owncid = new_column.own_content_id;
+  std::string othcid = new_column.other_content_id;
+  std::string versid = new_column.version_id;
+  std::string id_first = othcid.substr(0, 8);
+  std::string next_server_ip;
+  rc->getParam(id_first, &next_server_ip);
+  if (existSameNeighborNode(new_column.own_content_id, new_column.other_content_id) == 1) {
+    deleteColumnNeighborNode(new_column.own_content_id, new_column.other_content_id);
+  }
+  std::string query = "insert into neighbor_nodes (own_content_id, other_content_id, version_id, next_server_ip) values(\""
+      + owncid + "\", \"" + othcid + "\", \"" + versid + "\", \"" + next_server_ip + "\");";
+  int tmp;
+  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+    std::cerr << "in addNeighborNodes" << std::endl;
+    std::cerr << "query: " << query << std::endl;
+    std::cerr << "sendQuery返り値: " << tmp << std::endl;
+    //return -1;
+  }
+  char **result = this->db.getResult();
+  if (result != NULL) {
+    std::cout << result[0] << std::endl;
+  }
+  return 0;
+}
+int UpdateDistanceAgent::addCValueFromMemory(struct c_values new_column, std::string recv_time_stamp) {
+  std::string owncid = new_column.own_content_id;
+  std::string othcid = new_column.other_content_id;
+  std::string versid = new_column.version_id;
+  double next_value = new_column.next_value / this->nodeDegree(new_column.own_content_id);
+  std::string valcha = "";
+  for (int i = 0; i < MAX_HOP; i++) {
+    ostringstream os_value;
+    os_value << new_column.value_chain[i];
+    std::string tmp_value_s = os_value.str();
+    if (new_column.value_chain[i] != -1.0) {
+      if (i == 0) {
+        valcha = tmp_value_s;
+      } else {
+        valcha += "," + tmp_value_s;
+      }
+    } 
+  }
+  std::string nodcha = "";
+  for (int i = 0; i < MAX_HOP - 1; i++) {
+    std::string tmp_node = new_column.node_chain[i];
+    if (tmp_node != "NULL") {
+      if (i == 0) {
+        nodcha = tmp_node;
+      } else {
+        nodcha += "," + tmp_node;
+      }
+    }
+  }
+  if (existSameRouteColumnOnMemory(owncid, othcid, nodcha) == 1) {
+    deleteColumnCValueOnMemory(owncid, othcid, nodcha);
+  }
+  ostringstream os;
+  os << new_column.hop;
+  std::string hop_s = os.str();
+  ostringstream os2;
+  os2 << next_value;
+  std::string next_value_s = os2.str();
+  ostringstream os3;
+  os3 << new_column.next_value;
+  std::string now_value = os3.str();
+  valcha = now_value + "," + valcha;
+
+  std::string query = "insert into c_values (own_content_id, other_content_id, version_id, hop, next_value, value_chain, path_chain, recv_time_stamp) values(\"" + owncid + "\", \"" + othcid + "\", \"" + versid + "\", " + hop_s + ", " + next_value_s + ", \""  + valcha + "\", \"" + nodcha + "\", \"" + recv_time_stamp + "\");";
+  int tmp;
+  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+    std::cerr << "in addCValue" << std::endl;
+    std::cerr << "query: " << query << std::endl;
+    std::cerr << "sendQuery返り値: " << tmp << std::endl;
+    //return -1;
+  }
+  char **result = this->db.getResult();
+  if (result != NULL) {
+    std::cout << result[0] << std::endl;
+  }
+
+  return 0;
+}
+
+int UpdateDistanceAgent::existSameRouteColumnOnMemory(std::string ownci, std::string othci, std::string pathc) {
+  std::string query;
+
+  query = "select * from c_values where own_content_id = \"" + ownci + "\" and other_content_id = \"" + othci + "\" and path_chain = \"" + pathc + "\";";
+
+  if (this->db.sendQuery((char *)query.c_str()) < 0) {
+    std::cerr << "in existSameRouteColumn"  << std::endl;
+    //return -1;
+  }
+
+  if (this->db.getRowNum() > 0) {
+    //return 1;
+  } else {
+    return 0;
+  }
+  return 0;
+}
+int UpdateDistanceAgent::deleteColumnCValueOnMemory(std::string ownci, std::string othci, std::string pathc) {
+  std::string query;
+
+  query = "delete from c_values where own_content_id = \"" + ownci + "\" and other_content_id = \"" + othci + "\" and path_chain = \"" + pathc + "\";";
+
+  if (this->db.sendQuery((char *)query.c_str()) < 0) {
+    std::cerr << "in deleteColumnCValue"  << std::endl;
+    //return -1;
+  }
+
+  return 1;
+}
+
 int UpdateDistanceAgent::updateCvalueNeighbor() {
   std::cout << "in updateupdateCvalueNeighbor" << std::endl;
   char time_buff[] = "";
@@ -78,6 +255,7 @@ int UpdateDistanceAgent::updateCvalueNeighbor() {
       } else {
         this->addCValue(n_n_c.other_content_id, n_n_c.own_content_id, n_n_c.version_id, hop, next_value, (char *)next_value_chain.c_str(), node_chain, recv_time_stamp);
       }
+      std::cout << "loop_nu: " << c << std::endl;
     }
   }
   this->outputTime(1);

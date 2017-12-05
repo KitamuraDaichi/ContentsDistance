@@ -1,3 +1,5 @@
+#ifndef CONDIS
+#define CONDIS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +15,7 @@
 #include <map>
 
 #define LOCAL_SERVER_IP "10.58.58.2"
-#define INIT_SLEEP_TIME 3 
+#define INIT_SLEEP_TIME 0
 #define SLEEP_TIME      86400 
 #define UPDATE_DISTANCE_FROM_CS 16
 #define UPDATE_DISTANCE_SECOND 17
@@ -25,7 +27,8 @@
 #define MAX_HOP 3
 #define VALUE_SIZE 10
 #define MAX_COLUMN_NUM 100
-#define PROPAGATION_THREAD_NUM 4
+#define PROPAGATION_THREAD_NUM 1
+#define GET_TIME_SIZE 14
 
 void *cd_thread(void *arg);
 
@@ -66,6 +69,7 @@ class UpdateDistance {
 
     int setupUpdate();
     int setupUpdate2();
+    int setupUpdate3();
     Tcp_Server *ts;
     TcpClient *tc;
     ReadConfig *rc;
@@ -81,6 +85,7 @@ class UpdateDistance {
 void *cd_thread(void *arg);
 void *cs_thread(void *arg);
 void *send_each_ip(void *arg);
+void *send_each_ip_on_memory(void *arg);
 
 struct cd_thread_arg {
   UpdateDistance *ud;
@@ -123,4 +128,11 @@ struct send_each_ip_arg {
   char *ip;
   int max_ip_num;
   int *next_ip_num; 
+  char *ip_p;
 };
+struct send_each_ip_on_memory_arg {
+  std::string ip;
+  int max_ip_num;
+  std::map<std::string, vector<struct c_values> >::iterator *next_ip_itr; 
+};
+#endif

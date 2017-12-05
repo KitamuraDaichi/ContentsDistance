@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <OnMemoryDatabase.h>
 //#include <graph_manager.h>
 //#include <iostream>
 //#include <sstream>
@@ -14,23 +15,27 @@
 //#include <mysql_error.h>
 //#include <cppconn/Statement.h>
 //#include <cppconn/ResultSet.h>
+OnMemoryDatabase *omd;
 
 void *start_point_start(void *arg) {
   int init_sleep_time = INIT_SLEEP_TIME;
   int sleep_time = SLEEP_TIME;
-  sleep(init_sleep_time);
-  while(1) {
+  sleep(2);
+//  while(1) {
     UpdateDistance *ud;
     ud = new UpdateDistance();
-    ud->setupUpdate2();
-    sleep(sleep_time);
-  }
+    ud->setupUpdate3();
+  //  sleep(sleep_time);
+//  }
 }
 
 
 int main() {
-  pthread_t send_thread;
+  omd = new OnMemoryDatabase();
+  //omd->testLoadIp();
+  //return 0;
 
+  pthread_t send_thread;
   pthread_create(&send_thread, NULL, start_point_start, NULL);
 
   //ここから前のやつ

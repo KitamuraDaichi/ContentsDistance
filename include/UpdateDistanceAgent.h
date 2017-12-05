@@ -1,3 +1,5 @@
+#ifndef UPDATEDISTANCEAGENT
+#define UPDATEDISTANCEAGENT
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,6 +29,12 @@ class UpdateDistanceAgent {
     Tcp_Server *ts;
     std::map<std::string, std::vector<struct message_and_next_content_id> > dest_compless_map;
     int updateCvalueNeighbor();
+    int updateCvalueNeighborOnMemory();
+    int updateMysqlFromMemory(struct c_values recv_column, std::string recv_time_stamp);
+    int addNeighborNodeFromMemory(struct c_values new_column);
+    int addCValueFromMemory(struct c_values new_column, std::string recv_time_stamp);
+    int existSameRouteColumnOnMemory(std::string ownci, std::string othci, std::string pathc);
+    int deleteColumnCValueOnMemory(std::string ownci, std::string othci, std::string pathc);
     int addNeighborNodes(char *own_content_id, char *other_content_id, char *version_id);
     int addCValue(char *own_content_id, char *other_content_id, char *version_id, int hop, double next_value, char *value_chain, char *node_chain, std::string recv_time_stamp);
     int existSameNeighborNode(char *own_content_id, char *other_content_id);
@@ -60,3 +68,4 @@ struct message_and_next_content_id {
   char next_content_id[34];
   int degree;
 };
+#endif

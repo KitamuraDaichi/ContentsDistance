@@ -1,2 +1,3 @@
 ./obj/*
 ./condis
+./make_neighbor_node_table2.rb
