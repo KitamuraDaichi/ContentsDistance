@@ -89,9 +89,11 @@ UpdateDistance::~UpdateDistance() {
 }
 UpdateDistance::UpdateDistance() {
   rc = new ReadConfig("catalog_distance.conf");
+  /*
   if (db.connectDb("localhost", "root", "", "cfec_database2") < 0) {
     fprintf(stderr, "Databaseにconnectできませんでした。\n");
   }
+  */
 }
 int UpdateDistance::setupUpdate3() {
   std::cout << "in setupUpdate3" << std::endl;
@@ -431,7 +433,7 @@ void *send_each_ip_on_memory(void *arg) {
 
   std::cout << "ip: " << ip_s << std::endl;
   std::cout << "max_ip_num: " << max_ip_num << std::endl;
-  std::cout << "vector: " << (*next_ip_itr)->first << std::endl;
+  //std::cout << "vector: " << (*next_ip_itr)->first << std::endl;
   while(breakflag != 1) {
     // デバッグ
     /*
@@ -445,6 +447,7 @@ void *send_each_ip_on_memory(void *arg) {
     struct message_header *s_header = (struct message_header *)s_head_buf;
     setupMsgHeader(s_header, UPDATE_DISTANCE, 0, 0);
     int *column_num = (int *)((char *)s_header + sizeof(struct message_header));
+    std::cout << "count: " << omd->c_values_for_send_by_ip.count(ip_s) << std::endl;
     *column_num = omd->c_values_for_send_by_ip[ip_s].size();
     std::cout << "send column_num: " << *column_num << std::endl;
     TcpClient *tc;

@@ -18,7 +18,7 @@
 #define SERVER_NUMBER 0
 #define SERVER_NUM 64
 //#define SLEEP_TIME      86400 
-#define SLEEP_TIME      (60 * 60) 
+#define SLEEP_TIME      (60 * 60 * 1) 
 #define INIT_SLEEP_TIME (10 + ((SLEEP_TIME / SERVER_NUM) * SERVER_NUMBER))
 #define UPDATE_DISTANCE_FROM_CS 16
 #define UPDATE_DISTANCE_SECOND 17
@@ -27,10 +27,10 @@
 #define CONTENT_ID_SIZE 34
 #define VERSION_ID_SIZE 26
 #define IP_SIZE 34
-#define MAX_HOP 3
+#define MAX_HOP 4
 #define VALUE_SIZE 10
 #define MAX_COLUMN_NUM 100
-#define PROPAGATION_THREAD_NUM 1
+#define PROPAGATION_THREAD_NUM 4
 #define GET_TIME_SIZE 14
 
 void *cd_thread(void *arg);

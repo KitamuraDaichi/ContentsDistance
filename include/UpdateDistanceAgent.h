@@ -35,6 +35,7 @@ class UpdateDistanceAgent {
     int addCValueFromMemory(struct c_values new_column, std::string recv_time_stamp, int same_flag);
     int existSameRouteColumnOnMemory(std::string ownci, std::string othci, std::string pathc);
     int deleteColumnCValueOnMemory(std::string ownci, std::string othci, std::string pathc);
+    int writeMysql(std::vector<struct c_values> recv_c_values_vector, std::string recv_time_stamp);
     int addNeighborNodes(char *own_content_id, char *other_content_id, char *version_id);
     int addCValue(char *own_content_id, char *other_content_id, char *version_id, int hop, double next_value, char *value_chain, char *node_chain, std::string recv_time_stamp);
     int existSameNeighborNode(char *own_content_id, char *other_content_id);
@@ -43,6 +44,7 @@ class UpdateDistanceAgent {
     int deleteColumnCValue(char *own_content_id, char *other_content_id, char *path_chain);
     int nodeDegree(char *content_id);
     void outputTime(int start_end);
+    int outputColumnNum();
     int updateDistanceFromCs();
     void updateDistanceFromGm();
     int distance(std::string own_id, std::string other_id);

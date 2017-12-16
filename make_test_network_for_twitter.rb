@@ -59,7 +59,7 @@ end
 def output_file()
   output = ""
   node_counter = 0
-  node_upper = $node_num 
+  node_upper = $node_num + 2600
   output_hash_node = {}
   real_node_num = 0
   while real_node_num < $node_num do

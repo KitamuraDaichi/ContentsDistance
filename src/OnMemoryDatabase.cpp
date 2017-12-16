@@ -1,5 +1,6 @@
 #include <OnMemoryDatabase.h>
 using namespace boost;
+extern MysqlAccess global_db;
 shared_mutex neighbor_nodes_mutex;
 shared_mutex ip_mutex;
 shared_mutex c_values_mutex;
@@ -9,9 +10,11 @@ shared_mutex vectors_mutex;
 OnMemoryDatabase::~OnMemoryDatabase() {
 }
 OnMemoryDatabase::OnMemoryDatabase() {
+  /*
   if (db.connectDb("localhost", "root", "", "cfec_database2") < 0) {
     fprintf(stderr, "Databaseにconnectできませんでした。\n");
   }
+  */
   this->loadMysql();
 }
 int OnMemoryDatabase::loadMysql() {
@@ -36,6 +39,7 @@ int OnMemoryDatabase::loadMysql() {
   return 1;
 }
 int OnMemoryDatabase::loadCValuesForSendByIp() {
+  c_values_for_send_by_ip.clear();
   std::vector<std::string>::iterator v_itr;
   std::vector<std::string>::iterator v_itrEnd = next_ip_table.end();
 
@@ -47,12 +51,12 @@ int OnMemoryDatabase::loadCValuesForSendByIp() {
 
       std::string query = "select * from c_values join neighbor_nodes on c_values.own_content_id=neighbor_nodes.own_content_id where next_server_ip=\"" + ip_s + "\" and c_values.hop<" + hop_s + " and c_values.path_chain not like concat(\"\%\",c_values.other_content_id,\"\%\");";
     int tmp;
-    if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+    if ((tmp = global_db.sendQuery((char *)query.c_str())) < 0) {
       std::cerr << "sendQuery返り値: " << tmp << std::endl;
       return NULL;
     }
     MYSQL_ROW row;
-    while ((row = mysql_fetch_row(this->db.result))) {
+    while ((row = mysql_fetch_row(global_db.result))) {
       struct c_values tmp_c_values;
       // 次のサーバにそのまま入れれる形にしてあげる感じ
       strcpy(tmp_c_values.own_content_id, row[9]); // dest_id
@@ -102,12 +106,12 @@ int OnMemoryDatabase::loadCValuesForSendByIp() {
 int OnMemoryDatabase::loadNeighborNodes() {
   std::string query = "select * from neighbor_nodes;";
   int tmp;
-  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+  if ((tmp = global_db.sendQuery((char *)query.c_str())) < 0) {
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
     return -1;
   }   
   MYSQL_ROW row;
-  while ((row = mysql_fetch_row(this->db.result))) {
+  while ((row = mysql_fetch_row(global_db.result))) {
     struct neighbor_nodes tmp_neighbor_nodes;
     strcpy(tmp_neighbor_nodes.own_content_id, row[0]); 
     strcpy(tmp_neighbor_nodes.other_content_id, row[1]); 
@@ -123,14 +127,15 @@ int OnMemoryDatabase::loadNeighborNodes() {
   return 1;
 }
 int OnMemoryDatabase::loadIp() {
+  next_ip_table.clear();
   std::string query = "select distinct next_server_ip from neighbor_nodes;";
   int tmp;
-  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+  if ((tmp = global_db.sendQuery((char *)query.c_str())) < 0) {
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
     return -1;
   }   
   MYSQL_ROW row;
-  while ((row = mysql_fetch_row(this->db.result))) {
+  while ((row = mysql_fetch_row(global_db.result))) {
     char tmp_ip[IP_SIZE];
     strcpy(tmp_ip, row[0]); 
     std::string ip_s = tmp_ip;
@@ -142,12 +147,12 @@ int OnMemoryDatabase::loadIp() {
 int OnMemoryDatabase::loadCValues() {
   std::string query = "select * from c_values;";
   int tmp;
-  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+  if ((tmp = global_db.sendQuery((char *)query.c_str())) < 0) {
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
     return -1;
   }   
   MYSQL_ROW row;
-  while ((row = mysql_fetch_row(this->db.result))) {
+  while ((row = mysql_fetch_row(global_db.result))) {
     struct c_values tmp_c_values;
     strcpy(tmp_c_values.own_content_id, row[0]); 
     strcpy(tmp_c_values.other_content_id, row[1]); 

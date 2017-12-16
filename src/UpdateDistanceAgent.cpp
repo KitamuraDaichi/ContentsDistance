@@ -7,19 +7,23 @@ using namespace boost;
 boost::shared_mutex mutex;
 extern shared_mutex mysql_mutex;
 extern OnMemoryDatabase *omd;
+extern MysqlAccess global_db;
 pthread_mutex_t recv_thread_num_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t output_column_num_mutex = PTHREAD_MUTEX_INITIALIZER;
 int recv_thread_num = 0;
 
 pthread_mutex_t output_time_mutex = PTHREAD_MUTEX_INITIALIZER;
 UpdateDistanceAgent::~UpdateDistanceAgent() {
-  delete &db;
-  //delete ts;
+  //delete &db;
+  delete ts;
 }
 UpdateDistanceAgent::UpdateDistanceAgent(struct client_data cdata) {
   rc = new ReadConfig("catalog_distance.conf");
+  /*
   if (db.connectDb("localhost", "root", "", "cfec_database2") < 0) {
     fprintf(stderr, "Databaseにconnectできませんでした。\n");
   }
+  */
   ts = new Tcp_Server();
   ts->cdata = cdata;
 }
@@ -35,11 +39,43 @@ void UpdateDistanceAgent::outputTime(int start_end) {
   std::string addr = inet_ntoa(this->ts->cdata.saddr.sin_addr);
   if (start_end == 0) {
     fout << "recv_start," << addr << "," << recv_time << std::endl;
-  } else {
+  } else if (start_end == 1) {
     fout << "recv_end," << addr << "," << recv_time << std::endl;
+  } else {
+    /*
+    std::string query = "select count(*) from c_values;";
+    int tmp;
+    std::string column_num;
+    if ((tmp = global_db.sendQuery((char *)query.c_str())) >= 0) {
+      std::cerr << "sendQuery返り値: " << tmp << std::endl;
+      MYSQL_ROW row;
+      row = mysql_fetch_row(global_db.result);
+      column_num = row[0];
+    } else {
+      column_num = "0";
+    }
+    fout << "sql_end," << addr << "," << recv_time << "," << column_num << std::endl;
+    */
+    fout << "sql_end," << addr << "," << recv_time << std::endl;
   }
   fout.close();
   pthread_mutex_unlock(&output_time_mutex);
+}
+int UpdateDistanceAgent::outputColumnNum() {
+  std::string query = "select count(*) from c_values;";
+  int tmp;
+  if ((tmp = global_db.sendQuery((char *)query.c_str())) < 0) {
+    std::cerr << "sendQuery返り値: " << tmp << std::endl;
+    return NULL;
+  }
+  MYSQL_ROW row;
+  row = mysql_fetch_row(global_db.result);
+  std::string column_num = row[0];
+  pthread_mutex_lock(&output_column_num_mutex);
+  ofstream fout("./sql_column_num.csv", ios::app);
+  fout << "," << column_num << std::endl;
+  fout.close();
+  pthread_mutex_unlock(&output_column_num_mutex);
 }
 int UpdateDistanceAgent::updateCvalueNeighborOnMemory() {
   std::cout << "in updateupdateCvalueNeighborOnMemory" << std::endl;
@@ -67,12 +103,14 @@ int UpdateDistanceAgent::updateCvalueNeighborOnMemory() {
   this->ts->recvMsgAll((char *)&column_num, sizeof(int));
   std::cout << "column_num: " << column_num << std::endl;
   std::vector<struct c_values> recv_c_values_vector;
+  recv_c_values_vector.reserve(column_num);
   for (int i = 0; i < column_num; i++) {
     struct c_values recv_c_values;
     this->ts->recvMsgAll((char *)&recv_c_values, sizeof(struct c_values));
     recv_c_values_vector.push_back(recv_c_values);
     std::cout << "count: " << i << std::endl;
   }
+  this->outputTime(1);
   // Mysqlに書き込み
   std::vector<struct c_values>::iterator v_itr;
   std::vector<struct c_values>::iterator v_itrEnd = recv_c_values_vector.end();
@@ -95,18 +133,26 @@ int UpdateDistanceAgent::updateCvalueNeighborOnMemory() {
   pthread_mutex_lock(&recv_thread_num_mutex);
   recv_thread_num--;
   pthread_mutex_unlock(&recv_thread_num_mutex);
+  this->writeMysql(recv_c_values_vector, recv_time_stamp);
+  omd->loadMysql();
+  this->outputTime(-1);
+  //this->outputColumnNum();
+
+  return 1;
+}
+int UpdateDistanceAgent::writeMysql(std::vector<struct c_values> recv_c_values_vector, std::string recv_time_stamp) {
   upgrade_lock<shared_mutex> up_lock(mysql_mutex);
   upgrade_to_unique_lock<shared_mutex> write_lock(up_lock);
+  std::vector<struct c_values>::iterator v_itr;
+  std::vector<struct c_values>::iterator v_itrEnd = recv_c_values_vector.end();
   for (v_itr = recv_c_values_vector.begin(); v_itr != v_itrEnd; ++v_itr) {
     this->updateMysqlFromMemory(*v_itr, recv_time_stamp);
   }
-  omd->loadMysql();
-
-  return 1;
 }
 int UpdateDistanceAgent::updateMysqlFromMemory(struct c_values recv_column, std::string recv_time_stamp) {
   if (strcmp(recv_column.own_content_id, recv_column.other_content_id) == 0) {
     if (recv_column.hop == 1) {
+      recv_column.hop = 0;
       this->addNeighborNodeFromMemory(recv_column);
       int same_flag = 1;
       this->addCValueFromMemory(recv_column, recv_time_stamp, same_flag);
@@ -125,19 +171,19 @@ int UpdateDistanceAgent::addNeighborNodeFromMemory(struct c_values new_column) {
   std::string id_first = nodcha.substr(0, 8);
   std::string next_server_ip;
   rc->getParam(id_first, &next_server_ip);
-  if (existSameNeighborNode(new_column.own_content_id, new_column.other_content_id) == 1) {
-    deleteColumnNeighborNode(new_column.own_content_id, new_column.other_content_id);
-  }
+  //if (existSameNeighborNode(new_column.own_content_id, new_column.other_content_id) == 1) {
+    deleteColumnNeighborNode(new_column.own_content_id, new_column.node_chain[0]);
+  //}
   std::string query = "insert into neighbor_nodes (own_content_id, other_content_id, version_id, next_server_ip) values(\""
       + owncid + "\", \"" + nodcha + "\", \"" + versid + "\", \"" + next_server_ip + "\");";
   int tmp;
-  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+  if ((tmp = global_db.sendQuery((char *)query.c_str())) < 0) {
     std::cerr << "in addNeighborNodes" << std::endl;
     std::cerr << "query: " << query << std::endl;
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
     //return -1;
   }
-  char **result = this->db.getResult();
+  char **result = global_db.getResult();
   if (result != NULL) {
     std::cout << result[0] << std::endl;
   }
@@ -172,9 +218,6 @@ int UpdateDistanceAgent::addCValueFromMemory(struct c_values new_column, std::st
       }
     }
   }
-  if (existSameRouteColumnOnMemory(owncid, othcid, nodcha) == 1) {
-    deleteColumnCValueOnMemory(owncid, othcid, nodcha);
-  }
   ostringstream os;
   os << new_column.hop;
   std::string hop_s = os.str();
@@ -189,18 +232,21 @@ int UpdateDistanceAgent::addCValueFromMemory(struct c_values new_column, std::st
     valcha = "1000.0";
     next_value = 1000.0 / this->nodeDegree(new_column.own_content_id);
   }
+  //if (existSameRouteColumnOnMemory(owncid, othcid, nodcha) == 1) {
+    deleteColumnCValueOnMemory(owncid, othcid, nodcha);
+  //}
   ostringstream os2;
   os2 << next_value;
   std::string next_value_s = os2.str();
   std::string query = "insert into c_values (own_content_id, other_content_id, version_id, hop, next_value, value_chain, path_chain, recv_time_stamp) values(\"" + owncid + "\", \"" + othcid + "\", \"" + versid + "\", " + hop_s + ", " + next_value_s + ", \""  + valcha + "\", \"" + nodcha + "\", \"" + recv_time_stamp + "\");";
   int tmp;
-  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+  if ((tmp = global_db.sendQuery((char *)query.c_str())) < 0) {
     std::cerr << "in addCValue" << std::endl;
     std::cerr << "query: " << query << std::endl;
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
     //return -1;
   }
-  char **result = this->db.getResult();
+  char **result = global_db.getResult();
   if (result != NULL) {
     std::cout << result[0] << std::endl;
   }
@@ -213,13 +259,13 @@ int UpdateDistanceAgent::existSameRouteColumnOnMemory(std::string ownci, std::st
 
   query = "select * from c_values where own_content_id = \"" + ownci + "\" and other_content_id = \"" + othci + "\" and path_chain = \"" + pathc + "\";";
 
-  if (this->db.sendQuery((char *)query.c_str()) < 0) {
+  if (global_db.sendQuery((char *)query.c_str()) < 0) {
     std::cerr << "in existSameRouteColumn"  << std::endl;
     //return -1;
   }
 
-  if (this->db.getRowNum() > 0) {
-    //return 1;
+  if (global_db.getRowNum() > 0) {
+    return 1;
   } else {
     return 0;
   }
@@ -230,7 +276,7 @@ int UpdateDistanceAgent::deleteColumnCValueOnMemory(std::string ownci, std::stri
 
   query = "delete from c_values where own_content_id = \"" + ownci + "\" and other_content_id = \"" + othci + "\" and path_chain = \"" + pathc + "\";";
 
-  if (this->db.sendQuery((char *)query.c_str()) < 0) {
+  if (global_db.sendQuery((char *)query.c_str()) < 0) {
     std::cerr << "in deleteColumnCValue"  << std::endl;
     //return -1;
   }
@@ -357,13 +403,13 @@ int UpdateDistanceAgent::updateDistanceFromCs() {
     std::string ownci = n_n_c->other_content_id;
     query = "select * from neighbor_nodes where own_content_id = \"" + ownci + "\";";
     int tmp;
-    if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+    if ((tmp = global_db.sendQuery((char *)query.c_str())) < 0) {
       std::cerr << "sendQuery返り値: " << tmp << std::endl;
       return -1;
     }
     // もう既にpath chainにあれば飛ばす処理
     MYSQL_ROW row;
-    int count = mysql_num_rows(this->db.result);
+    int count = mysql_num_rows(global_db.result);
     struct neighbor_node_column nncp[count];
     int k = 0;
     std::string tmp_start_id = n_n_c->own_content_id;
@@ -373,7 +419,7 @@ int UpdateDistanceAgent::updateDistanceFromCs() {
       memcpy(tmp_path, (char *)path_chain + (sizeof(char) * 34 * j), sizeof(char) * 34);
       tmp_path_string[j] = tmp_path;
     }
-    while ((row = mysql_fetch_row(this->db.result))) {
+    while ((row = mysql_fetch_row(global_db.result))) {
       struct neighbor_node_column nnc;
       strcpy(nnc.own_content_id, row[0]);
       strcpy(nnc.other_content_id, row[1]);
@@ -521,13 +567,13 @@ int UpdateDistanceAgent::addNeighborNodes(char *own_content_id, char *other_cont
   std::string query = "insert into neighbor_nodes (own_content_id, other_content_id, version_id, next_server_ip) values(\""
       + owncid + "\", \"" + othcid + "\", \"" + versid + "\", \"" + next_server_ip + "\");";
   int tmp;
-  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+  if ((tmp = global_db.sendQuery((char *)query.c_str())) < 0) {
     std::cerr << "in addNeighborNodes" << std::endl;
     std::cerr << "query: " << query << std::endl;
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
     //return -1;
   }
-  char **result = this->db.getResult();
+  char **result = global_db.getResult();
   if (result != NULL) {
     std::cout << result[0] << std::endl;
   }
@@ -552,13 +598,13 @@ int UpdateDistanceAgent::addCValue(char *own_content_id, char *other_content_id,
   }
   std::string query = "insert into c_values (own_content_id, other_content_id, version_id, hop, next_value, value_chain, path_chain, recv_time_stamp) values(\"" + owncid + "\", \"" + othcid + "\", \"" + versid + "\", " + hop_s + ", " + next_value_s + ", \""  + valcha + "\", \"" + nodcha + "\", \"" + recv_time_stamp + "\");";
   int tmp;
-  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+  if ((tmp = global_db.sendQuery((char *)query.c_str())) < 0) {
     std::cerr << "in addCValue" << std::endl;
     std::cerr << "query: " << query << std::endl;
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
     //return -1;
   }
-  char **result = this->db.getResult();
+  char **result = global_db.getResult();
   if (result != NULL) {
     std::cout << result[0] << std::endl;
   }
@@ -570,12 +616,12 @@ int UpdateDistanceAgent::nodeDegree(char *content_id) {
   std::string ci = content_id;
   std::string query = "select * from neighbor_nodes where own_content_id = \"" + ci + "\";";
   int tmp;
-  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+  if ((tmp = global_db.sendQuery((char *)query.c_str())) < 0) {
     std::cerr << "in nodeDegree"  << std::endl;
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
     return NULL;
   }
-  int degree = mysql_num_rows(this->db.result);
+  int degree = mysql_num_rows(global_db.result);
   if (degree == 0) {
     std::cerr << "このコンテンツを所有してません" << std::endl;
     exit(1);
@@ -612,12 +658,12 @@ int UpdateDistanceAgent::addDb(char *own_content_id, char *other_content_id, cha
 
   std::cout << query << std::endl;
   int tmp;
-  if ((tmp = this->db.sendQuery((char *)query.c_str())) < 0) {
+  if ((tmp = global_db.sendQuery((char *)query.c_str())) < 0) {
     std::cerr << "in addDb"  << std::endl;
     std::cerr << "sendQuery返り値: " << tmp << std::endl;
     //return -1;
   }
-  char **result = this->db.getResult();
+  char **result = global_db.getResult();
   if (result != NULL) {
     std::cout << result[0] << std::endl;
   }
@@ -635,11 +681,11 @@ int UpdateDistanceAgent::calculateDistances(struct node_id other_content_id){
   int i;
 
   query = "select * from own_contents where other_content_id = \"" + othci + "and hop = 1\" ;";
-  if (this->db.sendQuery((char *)query.c_str()) != 1) {
+  if (global_db.sendQuery((char *)query.c_str()) != 1) {
     return -1;
   }
 
-  char **result = this->db.getResult();
+  char **result = global_db.getResult();
   if (result != NULL) {
     return -1;
   } else {
@@ -661,7 +707,7 @@ int UpdateDistanceAgent::existColumn(char *content_id) {
 
   query = "select * from neighbor_nodes where own_content_id = \"" + own_content_id + "\" ;";
 
-  int res = this->db.sendQuery((char *)query.c_str());
+  int res = global_db.sendQuery((char *)query.c_str());
   if (res < 1) {
     std::cout << "res: " << res << std::endl;
     std::cout << "query: " << query << std::endl;
@@ -669,7 +715,7 @@ int UpdateDistanceAgent::existColumn(char *content_id) {
     //return -1;
   }
 
-  char **result = this->db.getResult();
+  char **result = global_db.getResult();
   std::cout << result[0] << std::endl;
   return 1;
 }
@@ -681,12 +727,12 @@ int UpdateDistanceAgent::existSameNeighborNode(char *own_content_id, char *other
 
   query = "select * from neighbor_nodes where own_content_id = \"" + ownci + "\" and other_content_id = \"" + othci + "\";";
 
-  if (this->db.sendQuery((char *)query.c_str()) < 0) {
+  if (global_db.sendQuery((char *)query.c_str()) < 0) {
     std::cerr << "in existSameNeighborNode"  << std::endl;
     //return -1;
   }
 
-  if (this->db.getRowNum() > 0) {
+  if (global_db.getRowNum() > 0) {
     //return 1;
   } else {
     return 0;
@@ -702,13 +748,13 @@ int UpdateDistanceAgent::existSameRouteColumn(char *own_content_id, char *other_
 
   query = "select * from c_values where own_content_id = \"" + ownci + "\" and other_content_id = \"" + othci + "\" and path_chain = \"" + pathc + "\";";
 
-  if (this->db.sendQuery((char *)query.c_str()) < 0) {
+  if (global_db.sendQuery((char *)query.c_str()) < 0) {
     std::cerr << "in existSameRouteColumn"  << std::endl;
     //return -1;
   }
 
-  if (this->db.getRowNum() > 0) {
-    //return 1;
+  if (global_db.getRowNum() > 0) {
+    return 1;
   } else {
     return 0;
   }
@@ -721,7 +767,7 @@ int UpdateDistanceAgent::deleteColumnNeighborNode(char *own_content_id, char *ot
 
   query = "delete from neighbor_nodes where own_content_id = \"" + ownci + "\" and other_content_id = \"" + othci + "\";";
 
-  if (this->db.sendQuery((char *)query.c_str()) < 0) {
+  if (global_db.sendQuery((char *)query.c_str()) < 0) {
     std::cerr << "in deleteColumnNeighborNode"  << std::endl;
     //return -1;
   }
@@ -737,7 +783,7 @@ int UpdateDistanceAgent::deleteColumnCValue(char *own_content_id, char *other_co
 
   query = "delete from c_values where own_content_id = \"" + ownci + "\" and other_content_id = \"" + othci + "\" and path_chain = \"" + pathc + "\";";
 
-  if (this->db.sendQuery((char *)query.c_str()) < 0) {
+  if (global_db.sendQuery((char *)query.c_str()) < 0) {
     std::cerr << "in deleteColumnCValue"  << std::endl;
     //return -1;
   }
@@ -752,7 +798,7 @@ int UpdateDistanceAgent::deleteColumn(char *own_content_id, char *other_content_
 
   query = "delete from c_values where own_content_id = \"" + ownci + "\" and other_content_id = \"" + othci + "\" and path_chain = \"" + pathc + "\";";
 
-  if (this->db.sendQuery((char *)query.c_str()) < 0) {
+  if (global_db.sendQuery((char *)query.c_str()) < 0) {
     std::cerr << "in deleteColumn"  << std::endl;
     //return -1;
   }
@@ -764,10 +810,10 @@ int UpdateDistanceAgent::distance(std::string own_id, std::string other_id) {
   std::string query;
   query = "select * from own_contents where own_content_id = \"" + own_id + "\" ;";
 
-  if (this->db.sendQuery((char *)query.c_str()) < 0) {
+  if (global_db.sendQuery((char *)query.c_str()) < 0) {
     fprintf(stderr, "Databaseをreadできませんでした。\n");
   }
-  char **result = this->db.getResult();
+  char **result = global_db.getResult();
   if (result == NULL) {
     return -1;
   }

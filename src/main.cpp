@@ -16,6 +16,7 @@
 //#include <cppconn/Statement.h>
 //#include <cppconn/ResultSet.h>
 OnMemoryDatabase *omd;
+MysqlAccess global_db;
 void *send_thread(void *arg) {
   UpdateDistance *ud;
   ud = new UpdateDistance();
@@ -36,7 +37,13 @@ void *start_point_start(void *arg) {
 
 
 int main() {
+  std::cout << "debug 3" << std::endl;
+  if (global_db.connectDb("localhost", "root", "", "cfec_database2") < 0) {
+    fprintf(stderr, "Databaseにconnectできませんでした。\n");
+  }
+  std::cout << "debug 1" << std::endl;
   omd = new OnMemoryDatabase();
+  std::cout << "debug 2" << std::endl;
   //omd->testLoadIp();
   //return 0;
 
